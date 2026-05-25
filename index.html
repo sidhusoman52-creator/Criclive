@@ -71,8 +71,10 @@
 
 async function getLiveScore() {
 
+try {
+
 const url =
-"https://api.cricapi.com/v1/currentMatches?apikey=21ba7825-b668-4ef9-b5ed-91680688b513;
+"https://api.cricapi.com/v1/currentMatches?apikey=21ba7825-b668-4ef9-b5ed-91680688b513&offset=0";
 
 const response = await fetch(url);
 
@@ -80,24 +82,48 @@ const data = await response.json();
 
 console.log(data);
 
+if(data.data && data.data.length > 0){
+
 const match = data.data[0];
 
 document.getElementById("teams").innerHTML =
-match.name;
+match.name || "Match Not Found";
+
+if(match.score && match.score.length > 0){
 
 document.getElementById("score").innerHTML =
 match.score[0].r + "/" +
 match.score[0].w + " (" +
 match.score[0].o + ")";
 
+}
+
 document.getElementById("status").innerHTML =
-match.status;
+match.status || "No Status";
+
+}
+
+} catch(error){
+
+console.log(error);
+
+document.getElementById("teams").innerHTML =
+"API Error";
+
+document.getElementById("score").innerHTML =
+"Unable to load score";
+
+document.getElementById("status").innerHTML =
+"Check API key or API limit";
+
+}
 
 }
 
 getLiveScore();
 
 setInterval(getLiveScore, 10000);
+  
 
 </script>
 
