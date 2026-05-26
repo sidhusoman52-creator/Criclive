@@ -50,10 +50,11 @@
         </section>
 
         <section id="content-schedule" class="tab-content hidden">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center shadow-xl">
-                <p class="text-lime-400 text-lg font-bold mb-2">📅 Schedule Calendar Pipeline</p>
-                <p class="text-sm text-zinc-400 max-w-md mx-auto">This section will host upcoming international fixtures. We'll link the fixtures API endpoint here in our next upgrade step!</p>
+            <div id="schedule-status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
+                <p class="text-sm text-zinc-400 animate-pulse">Loading upcoming cricket calendar...</p>
             </div>
+            <div id="schedule-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                </div>
         </section>
 
         <section id="content-tables" class="tab-content hidden">
@@ -66,26 +67,30 @@
     </main>
 
     <script>
-        // Your active authenticated endpoint key
         const API_KEY = "21ba7825-b668-4ef9-b5ed-91680688b513"; 
-        const API_URL = `https://api.cricapi.com/v1/currentMatches?apikey=${API_KEY}`;
+        const LIVE_API_URL = `https://api.cricapi.com/v1/currentMatches?apikey=${API_KEY}`;
+        const SCHEDULE_API_URL = `https://api.cricapi.com/v1/matches?apikey=${API_KEY}`;
+
+        // Track variables to avoid hitting the API excessively
+        let scheduleFetched = false;
 
         // 1. Core Navigation Manager System
         function switchTab(tabName) {
-            // Hide all views
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            // Remove active highlights from buttons
             document.querySelectorAll('nav button').forEach(btn => {
                 btn.classList.remove('text-lime-500', 'border-lime-500', 'font-bold');
                 btn.classList.add('text-gray-400', 'border-transparent');
             });
 
-            // Show selected view
             document.getElementById(`content-${tabName}`).classList.remove('hidden');
-            // Highlight selected button
             const activeBtn = document.getElementById(`tab-${tabName}`);
             activeBtn.classList.remove('text-gray-400', 'border-transparent');
             activeBtn.classList.add('text-lime-500', 'border-lime-500', 'font-bold');
+
+            // Trigger fetch for schedules only when user clicks the tab
+            if (tabName === 'schedule' && !scheduleFetched) {
+                fetchSchedules();
+            }
         }
 
         // 2. Cricbuzz Interactive Live Feed Fetcher Engine
@@ -96,9 +101,8 @@
 
             try {
                 indicatorEl.innerText = "🔄 Syncing live...";
-                const response = await fetch(API_URL);
+                const response = await fetch(LIVE_API_URL);
                 if (!response.ok) throw new Error(`HTTP Error Code ${response.status}`);
-                
                 const result = await response.json();
 
                 if (result.status !== "success") {
@@ -111,17 +115,14 @@
                     return;
                 }
 
-                // Ready the container matrix layout
                 containerEl.innerHTML = '';
                 statusEl.classList.add('hidden');
                 containerEl.classList.remove('hidden');
 
-                // Map live objects directly to specialized UI blocks
                 result.data.forEach(match => {
                     const card = document.createElement('div');
                     card.className = "bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg p-5 shadow-md flex flex-col justify-between transition-all";
 
-                    // Formulate structured layouts mapping exact innings sequences
                     const score1 = match.score && match.score[0] ? `${match.score[0].r}/${match.score[0].w} <span class="text-xs text-zinc-500 font-normal">(${match.score[0].o} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
                     const score2 = match.score && match.score[1] ? `${match.score[1].r}/${match.score[1].w} <span class="text-xs text-zinc-500 font-normal">(${match.score[1].o} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
 
@@ -133,9 +134,7 @@
                                     <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>LIVE
                                 </span>
                             </div>
-
                             <h2 class="text-xs text-zinc-400 line-clamp-1 mb-4 font-medium">${match.name}</h2>
-
                             <div class="space-y-3.5 my-2">
                                 <div class="flex justify-between items-center">
                                     <span class="font-bold text-zinc-200 text-base tracking-tight">${match.teams[0]}</span>
@@ -147,7 +146,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="mt-5 pt-3 border-t border-zinc-800/80 text-xs font-semibold text-sky-400 tracking-wide">
                             👉 ${match.status || 'Match calculations updating...'}
                         </div>
@@ -156,7 +154,6 @@
                 });
 
                 indicatorEl.innerText = "✅ Updated";
-
             } catch (err) {
                 console.error(err);
                 indicatorEl.innerText = "❌ Offline";
@@ -164,7 +161,65 @@
             }
         }
 
-        // Initialize and lock background interval looping loop parameters
+        // 3. Cricbuzz Schedule Engine Loader
+        async function fetchSchedules() {
+            const statusEl = document.getElementById('schedule-status-message');
+            const containerEl = document.getElementById('schedule-container');
+
+            try {
+                const response = await fetch(SCHEDULE_API_URL);
+                if (!response.ok) throw new Error("Could not download fixture list.");
+                const result = await response.json();
+
+                if (result.status !== "success" || !result.data) {
+                    statusEl.innerHTML = `<p class="text-sm text-amber-400">Failed parsing schedules from provider.</p>`;
+                    return;
+                }
+
+                // Filter out games that haven't started yet to construct a true schedule
+                const upcomingMatches = result.data.filter(match => match.matchStarted === false);
+
+                if (upcomingMatches.length === 0) {
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">No scheduled fixtures listed in database right now.</p>`;
+                    return;
+                }
+
+                containerEl.innerHTML = '';
+                statusEl.classList.add('hidden');
+                containerEl.classList.remove('hidden');
+
+                upcomingMatches.slice(0, 20).forEach(match => {
+                    const card = document.createElement('div');
+                    card.className = "bg-zinc-900 border border-zinc-800 rounded-lg p-5 flex flex-col justify-between shadow-sm";
+
+                    // Formulate cleaner display dates
+                    const matchDate = match.date ? new Date(match.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Date TBD';
+
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-wide border-b border-zinc-800/60 pb-2 mb-3">
+                                <span>${match.matchType || 'Match'}</span>
+                                <span class="text-lime-400 font-mono bg-lime-950/20 px-2 py-0.5 rounded">${matchDate}</span>
+                            </div>
+                            <h3 class="text-sm font-bold text-zinc-200 mb-1">${match.name}</h3>
+                            <p class="text-xs text-zinc-500 mb-4">${match.venue || 'Venue information not listed yet'}</p>
+                        </div>
+                        <div class="pt-3 border-t border-zinc-800/50 flex justify-between items-center text-[11px] text-zinc-400 font-medium">
+                            <span>Teams: ${match.teams ? match.teams.join(' vs ') : 'TBD'}</span>
+                            <span class="text-amber-500 font-semibold bg-amber-950/10 px-1.5 py-0.5 rounded border border-amber-900/20">Upcoming</span>
+                        </div>
+                    `;
+                    containerEl.appendChild(card);
+                });
+
+                scheduleFetched = true; // Block double calls to save bandwidth
+            } catch (err) {
+                console.error(err);
+                statusEl.innerHTML = `<p class="text-xs text-red-400">Error rendering upcoming calendar list.</p>`;
+            }
+        }
+
+        // Initialize live polling loops
         fetchLiveScores();
         setInterval(fetchLiveScores, 30000);
     </script>
