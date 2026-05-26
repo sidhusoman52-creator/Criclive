@@ -27,19 +27,23 @@ font-weight:bold;
 display:flex;
 overflow:auto;
 background:white;
-border-bottom:1px solid #ddd;
+padding:5px;
+gap:5px;
 }
 
-.tab{
-padding:15px;
+.tabs button{
+padding:12px;
+border:none;
+background:#eee;
+border-radius:8px;
 font-weight:bold;
 cursor:pointer;
-white-space:nowrap;
+min-width:100px;
 }
 
-.active{
-color:#009270;
-border-bottom:3px solid #009270;
+.tabs button.active{
+background:#009270;
+color:white;
 }
 
 .container{
@@ -89,25 +93,25 @@ CricLive
 
 <div class="tabs">
 
-<div class="tab active" id="liveTab">
+<button id="liveBtn">
 LIVE
-</div>
+</button>
 
-<div class="tab" id="upcomingTab">
+<button id="upcomingBtn">
 UPCOMING
-</div>
+</button>
 
-<div class="tab" id="iplTab">
+<button id="iplBtn">
 IPL
-</div>
+</button>
 
-<div class="tab" id="internationalTab">
+<button id="internationalBtn">
 INTERNATIONAL
-</div>
+</button>
 
-<div class="tab" id="resultsTab">
+<button id="resultsBtn">
 RESULTS
-</div>
+</button>
 
 </div>
 
@@ -119,25 +123,25 @@ RESULTS
 
 <script>
 
-const apiKey = "YOUR_API_KEY";
+const apiKey =21ba7825-b668-4ef9-b5ed-91680688b513
 
 const matches =
 document.getElementById("matches");
 
-function clearTabs(){
+function clearButtons(){
 
-document.querySelectorAll(".tab")
-.forEach(tab => {
-tab.classList.remove("active");
+document.querySelectorAll("button")
+.forEach(btn => {
+btn.classList.remove("active");
 });
 
 }
 
 async function loadLive(){
 
-clearTabs();
+clearButtons();
 
-document.getElementById("liveTab")
+document.getElementById("liveBtn")
 .classList.add("active");
 
 matches.innerHTML =
@@ -157,9 +161,11 @@ if(data.data){
 
 data.data.forEach(match => {
 
-let score = "Score unavailable";
+let score =
+"Score unavailable";
 
-if(match.score && match.score.length > 0){
+if(match.score &&
+match.score.length > 0){
 
 score =
 match.score[0].r + "/" +
@@ -173,7 +179,7 @@ matches.innerHTML += `
 <div class="card">
 
 <div class="live">
-LIVE
+🔴 LIVE
 </div>
 
 <div class="teams">
@@ -207,9 +213,9 @@ matches.innerHTML =
 
 function loadUpcoming(){
 
-clearTabs();
+clearButtons();
 
-document.getElementById("upcomingTab")
+document.getElementById("upcomingBtn")
 .classList.add("active");
 
 matches.innerHTML = `
@@ -244,9 +250,9 @@ Tomorrow • 7:30 PM IST
 
 function loadIPL(){
 
-clearTabs();
+clearButtons();
 
-document.getElementById("iplTab")
+document.getElementById("iplBtn")
 .classList.add("active");
 
 matches.innerHTML = `
@@ -254,7 +260,7 @@ matches.innerHTML = `
 <div class="card">
 
 <div class="teams">
-GT vs RCB
+RCB vs CSK
 </div>
 
 <div class="status">
@@ -266,7 +272,7 @@ IPL Match
 <div class="card">
 
 <div class="teams">
-RCB vs CSK
+MI vs GT
 </div>
 
 <div class="status">
@@ -281,9 +287,9 @@ IPL Match
 
 function loadInternational(){
 
-clearTabs();
+clearButtons();
 
-document.getElementById("internationalTab")
+document.getElementById("internationalBtn")
 .classList.add("active");
 
 matches.innerHTML = `
@@ -318,9 +324,9 @@ T20 Series
 
 function loadResults(){
 
-clearTabs();
+clearButtons();
 
-document.getElementById("resultsTab")
+document.getElementById("resultsBtn")
 .classList.add("active");
 
 matches.innerHTML = `
@@ -341,20 +347,20 @@ Mali won by 6 wickets
 
 }
 
-document.getElementById("liveTab")
-.onclick = loadLive;
+document.getElementById("liveBtn")
+.addEventListener("click",loadLive);
 
-document.getElementById("upcomingTab")
-.onclick = loadUpcoming;
+document.getElementById("upcomingBtn")
+.addEventListener("click",loadUpcoming);
 
-document.getElementById("iplTab")
-.onclick = loadIPL;
+document.getElementById("iplBtn")
+.addEventListener("click",loadIPL);
 
-document.getElementById("internationalTab")
-.onclick = loadInternational;
+document.getElementById("internationalBtn")
+.addEventListener("click",loadInternational);
 
-document.getElementById("resultsTab")
-.onclick = loadResults;
+document.getElementById("resultsBtn")
+.addEventListener("click",loadResults);
 
 loadLive();
 
