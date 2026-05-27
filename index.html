@@ -3,20 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cricbuzz Clone - True Ball-by-Ball Tracker</title>
-    <!-- Tailwind CSS CDN for UI styling -->
+    <title>Cricbuzz Clone - Instant Live Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .4; }
-        }
-        .animate-pulse-dot {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+        .animate-pulse-dot { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
 </head>
-<body class="bg-[#121212] text-gray-200 font-sans antialiased selection:bg-[#004d40]">
+<body class="bg-[#121212] text-gray-200 font-sans antialiased">
 
     <!-- ======================================================== -->
     <!-- SCREEN 1: MATCH LIST DASHBOARD                           -->
@@ -25,52 +19,19 @@
         <header class="bg-[#004d40] p-4 flex items-center justify-between shadow-md">
             <div class="flex items-center space-x-3">
                 <span class="text-xl font-bold tracking-tight text-white">Cricbuzz Clone</span>
-                <span class="bg-[#1b5e20] text-[#81c784] text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide">LIVE APP</span>
+                <span class="bg-[#1b5e20] text-[#81c784] text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide">NO API KEY REQ</span>
             </div>
             <div class="flex items-center space-x-1 text-xs text-[#81c784] font-medium bg-[#1e1e1e]/40 px-2 py-1 rounded">
-                <span id="sync-icon">✓</span> <span id="sync-status">Live Connected</span>
+                <span id="sync-status">Live Connected</span>
             </div>
         </header>
 
-        <nav class="bg-[#1e1e1e] border-b border-gray-800 flex text-xs md:text-sm font-semibold tracking-wide">
-            <button class="flex-1 py-3 text-center border-b-2 border-[#81c784] text-[#81c784]">Live Matches</button>
-            <button class="flex-1 py-3 text-center text-gray-400 hover:text-gray-200">Schedules</button>
-            <button class="flex-1 py-3 text-center text-gray-400 hover:text-gray-200">Points Table</button>
-        </nav>
-
         <main class="max-w-xl mx-auto p-4 space-y-4">
+            <h2 class="text-xs font-bold text-gray-400 tracking-wider uppercase pl-1">Active Live Matches</h2>
             
-            <!-- BALL-BY-BALL API DRIVEN CARD: Ireland vs New Zealand -->
-            <div onclick="openLiveMatchView()" class="bg-[#1e1e1e] rounded-xl p-4 border border-gray-800 shadow-sm hover:border-zinc-700 transition cursor-pointer group active:scale-[0.99]">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">TEST</span>
-                    <span class="text-[10px] font-bold uppercase tracking-wider bg-red-900/30 text-red-400 px-2 py-0.5 rounded flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-dot"></span> LIVE
-                    </span>
-                </div>
-                
-                <h3 class="text-xs text-gray-400 truncate mb-3 group-hover:text-gray-300" id="dash-match-title">
-                    Ireland vs New Zealand, Only Test, New Zealand tour of Ireland 2026
-                </h3>
-
-                <div class="space-y-2.5">
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold text-white text-base" id="dash-team1-name">New Zealand</span>
-                        <span class="font-extrabold text-white text-base">
-                            <span id="dash-batting-score">329/5</span> 
-                            <span id="dash-batting-overs" class="text-xs font-normal text-gray-400">(85.4 ov)</span>
-                        </span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold text-zinc-400 text-base" id="dash-team2-name">Ireland</span>
-                        <span class="text-xs text-zinc-500 font-medium" id="dash-team2-score">Yet to bat</span>
-                    </div>
-                </div>
-
-                <div class="text-xs text-[#29b6f6] font-medium pt-3 mt-3 border-t border-gray-800/60 flex justify-between">
-                    <span id="dash-status-note">👉 Syncing real-time feed stats...</span>
-                    <span class="text-[10px] text-zinc-500 uppercase font-mono" id="dash-update-time">In Sync</span>
-                </div>
+            <!-- Target container where the live matches will appear -->
+            <div id="live-match-list-container" class="space-y-4">
+                <div class="p-8 text-center text-zinc-500 text-sm">Fetching real-time matches from Cricbuzz feed...</div>
             </div>
         </main>
     </div>
@@ -80,155 +41,146 @@
     <!-- ======================================================== -->
     <div id="live-match-view" class="hidden">
         <div class="bg-[#004d40] p-4 flex items-center shadow-md sticky top-0 z-10">
-            <button onclick="closeLiveMatchView()" class="mr-4 text-white text-2xl font-bold leading-none focus:outline-none hover:text-gray-300">
-                &larr;
-            </button>
+            <button onclick="closeLiveMatchView()" class="mr-4 text-white text-2xl font-bold leading-none hover:text-gray-300">&larr;</button>
             <div class="min-w-0 flex-1">
-                <h1 class="text-white font-bold text-sm md:text-base truncate" id="live-header-title">Ireland vs New Zealand</h1>
-                <p class="text-[11px] text-zinc-300 truncate" id="live-header-subtitle">Live True Scorecard</p>
+                <h1 class="text-white font-bold text-sm md:text-base truncate" id="live-header-title">Match Detail</h1>
+                <p class="text-[11px] text-zinc-300 truncate" id="live-header-subtitle">Live Updates</p>
             </div>
         </div>
 
-        <div class="bg-[#1e1e1e] border-b border-gray-800 flex text-xs font-semibold tracking-wider sticky top-[64px] z-10">
-            <button class="flex-1 py-3 text-center border-b-2 border-[#81c784] text-[#81c784]">LIVE</button>
-            <button class="flex-1 py-3 text-center text-gray-400">SCORECARD</button>
-            <button class="flex-1 py-3 text-center text-gray-400">COMMENTARY</button>
-        </div>
-
         <div class="max-w-xl mx-auto p-4 space-y-4">
-            <!-- Dynamic Score Card Dashboard -->
+            <!-- Dynamic Score Card -->
             <div class="bg-[#1e1e1e] rounded-xl p-4 border border-gray-800 shadow-sm">
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-[10px] font-bold uppercase tracking-wider bg-red-900/40 text-red-400 px-2 py-0.5 rounded flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-dot"></span> LIVE MATCH DATA
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-dot"></span> LIVE
                     </span>
+                    <span class="text-[11px] text-gray-400 font-medium" id="live-match-format">TEST</span>
                 </div>
                 
                 <div class="flex justify-between items-baseline my-3">
                     <div>
-                        <h2 class="text-lg font-bold text-white" id="live-active-batting-team">New Zealand</h2>
-                        <p class="text-[11px] text-gray-400 mt-0.5" id="live-crr">Innings: 1</p>
+                        <h2 class="text-lg font-bold text-white" id="live-team-batting">Loading side...</h2>
+                        <p class="text-[11px] text-gray-400 mt-0.5" id="live-match-type">Innings 1</p>
                     </div>
                     <div class="text-right">
-                        <div class="text-2xl font-extrabold text-white tracking-tight" id="live-main-score">329/5</div>
-                        <div class="text-xs text-gray-400" id="live-main-overs">(85.4 Ov)</div>
+                        <div class="text-2xl font-extrabold text-white tracking-tight" id="live-main-score">0/0</div>
+                        <div class="text-xs text-gray-400" id="live-main-overs">(0.0 Ov)</div>
                     </div>
                 </div>
                 
                 <div class="text-xs text-[#81c784] font-medium pt-2 border-t border-gray-800/60" id="live-status-note">
-                    👉 Fetching Match Note Status...
+                    Syncing ball status...
                 </div>
             </div>
 
-            <!-- Mini Line-up Stats Table Panel (Direct Mapping) -->
-            <div class="bg-[#1e1e1e] rounded-xl border border-gray-800 overflow-hidden shadow-sm text-xs">
-                <div class="grid grid-cols-12 bg-[#262626] p-2.5 text-gray-400 font-semibold border-b border-gray-800">
-                    <div class="col-span-6">Active Team Line-up Elements</div>
-                    <div class="col-span-3 text-center">R / O</div>
-                    <div class="col-span-3 text-right">B / W</div>
-                </div>
-                
-                <!-- Dynamic Target Insertion Point for Players -->
-                <div id="live-player-stats-hook" class="divide-y divide-gray-800/40">
-                    <div class="p-4 text-center text-zinc-500">Entering active match rosters...</div>
+            <!-- Simple Live Commentary Hook -->
+            <div class="bg-[#1e1e1e] rounded-xl p-4 border border-gray-800 shadow-sm">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Current Situation</h3>
+                <div id="live-situation-box" class="text-sm text-zinc-300 bg-zinc-900/40 p-3 rounded-lg border border-zinc-800/50">
+                    Waiting for the next ball to be bowled...
                 </div>
             </div>
         </div>
     </div>
 
     <!-- ======================================================== -->
-    <!-- JAVASCRIPT TRUE BALL-BY-BALL API DATA MAPPING INTERFACE  -->
+    <!-- JAVASCRIPT AUTOMATED INSTANT DATA STREAM                 -->
     <!-- ======================================================== -->
     <script>
-        const CONFIG = {
-            apiKey: "21ba7825-b668-4ef9-b5ed-91680688b513",
-            endpoint: "https://api.cricapi.com/v1/match_info",
-            // REPLACE THIS VALUE with the official active Match ID string from your query list
-            matchId: "df4bd994-01ee-48c9-83c8-db37fec31df2", 
-            refreshIntervalMs: 10000 // Ticks every 10 seconds to get ball-by-ball updates
-        };
+        const API_URL = "https://cricbuzz-api.vercel.app/matches/live";
+        let activeMatchId = null;
+        let updateLoopInterval = null;
 
-        const views = {
-            dashboard: document.getElementById('dashboard-view'),
-            liveMatch: document.getElementById('live-match-view')
-        };
-
-        async function runTrueBallByBallSync() {
+        // Fetch all live matches and render them on dashboard
+        async function fetchDashboardMatches() {
             try {
-                document.getElementById('sync-status').innerText = "Syncing...";
+                const response = await fetch(API_URL);
+                const data = await response.json();
                 
-                // Querying the explicit match details endpoint directly
-                const response = await fetch(`${CONFIG.endpoint}?apikey=${CONFIG.apiKey}&id=${CONFIG.matchId}`);
-                if (!response.ok) throw new Error("Network latency anomaly");
-                
-                const payload = await response.json();
-                if (payload.status !== "success" || !payload.data) return;
-
-                const match = payload.data;
-
-                // 1. Map Match Description Titles
-                document.getElementById('dash-match-title').innerText = `${match.name}, ${match.venue}`;
-                document.getElementById('live-header-title').innerText = match.name;
-                document.getElementById('live-header-subtitle').innerText = match.status;
-
-                // 2. Loop & Isolate Scoreboards dynamically
-                if (match.score && match.score.length > 0) {
-                    // Score 1 (First Innings)
-                    const s1 = match.score[0];
-                    document.getElementById('dash-team1-name').innerText = s1.inning;
-                    document.getElementById('dash-batting-score').innerText = `${s1.r}/${s1.w}`;
-                    document.getElementById('dash-batting-overs').innerText = `(${s1.o} ov)`;
-
-                    document.getElementById('live-active-batting-team').innerText = s1.inning;
-                    document.getElementById('live-main-score').innerText = `${s1.r}/${s1.w}`;
-                    document.getElementById('live-main-overs').innerText = `(${s1.o} Ov)`;
-
-                    // Score 2 (Second Innings if active)
-                    if (match.score[1]) {
-                        const s2 = match.score[1];
-                        document.getElementById('dash-team2-name').innerText = s2.inning;
-                        document.getElementById('dash-team2-score').innerText = `${s2.r}/${s2.w} (${s2.o} ov)`;
-                    }
+                if (!data || data.length === 0) {
+                    document.getElementById('live-match-list-container').innerHTML = `<div class="p-8 text-center text-zinc-500 text-sm">No live matches currently playing.</div>`;
+                    return;
                 }
 
-                // 3. Map running status notes
-                document.getElementById('dash-status-note').innerText = `👉 ${match.status}`;
-                document.getElementById('live-status-note').innerText = `👉 ${match.status}`;
-
-                // 4. Safely Map Team Names or Lineup changes
-                if(match.teams && match.teams.length >= 2) {
-                    // Render player lineup cards into the table rows cleanly
-                    const statsHook = document.getElementById('live-player-stats-hook');
-                    statsHook.innerHTML = `
-                        <div class="grid grid-cols-12 p-3 bg-zinc-800/20">
-                            <div class="col-span-6 font-semibold text-white">${match.teams[0]}</div>
-                            <div class="col-span-3 text-center text-zinc-400">Team 1</div>
-                            <div class="col-span-3 text-right text-zinc-500">Squad Confirmed</div>
-                        </div>
-                        <div class="grid grid-cols-12 p-3">
-                            <div class="col-span-6 font-semibold text-zinc-300">${match.teams[1]}</div>
-                            <div class="col-span-3 text-center text-zinc-400">Team 2</div>
-                            <div class="col-span-3 text-right text-zinc-500">Squad Confirmed</div>
+                let htmlContent = "";
+                data.forEach(match => {
+                    htmlContent += `
+                        <div onclick="startLiveTracking('${match.id}')" class="bg-[#1e1e1e] rounded-xl p-4 border border-gray-800 shadow-sm hover:border-zinc-700 transition cursor-pointer active:scale-[0.99]">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">${match.matchType || 'MATCH'}</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider bg-red-900/30 text-red-400 px-2 py-0.5 rounded flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-dot"></span> LIVE
+                                </span>
+                            </div>
+                            <h3 class="text-xs font-semibold text-zinc-300 mb-3">${match.title}</h3>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex justify-between"><span class="font-bold text-white">${match.teams.team1.name}</span><span class="font-extrabold text-white">${match.teams.team1.score || 'Yet to bat'}</span></div>
+                                <div class="flex justify-between"><span class="font-bold text-zinc-400">${match.teams.team2.name}</span><span class="font-bold text-zinc-400">${match.teams.team2.score || 'Yet to bat'}</span></div>
+                            </div>
+                            <div class="text-xs text-[#29b6f6] font-medium pt-2 mt-3 border-t border-gray-800/60">
+                                👉 ${match.status || 'Click to view real-time card'}
+                            </div>
                         </div>
                     `;
-                }
+                });
 
-                // Update sync confirmation timers 
-                const now = new Date();
-                document.getElementById('dash-update-time').innerText = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')} GMT`;
+                document.getElementById('live-match-list-container').innerHTML = htmlContent;
                 document.getElementById('sync-status').innerText = "Live Connected";
-
             } catch (err) {
-                console.warn("Sync warning:", err);
+                console.error("Dashboard error:", err);
                 document.getElementById('sync-status').innerText = "Offline Retry";
             }
         }
 
-        // Routing Screen System Handlers
-        function openLiveMatchView() {
-            views.dashboard.classList.replace('block', 'hidden');
-            views.liveMatch.classList.replace('hidden', 'block');
-            window.scrollTo({ top: 0, behavior: 'instant' });
+        // Fetch single match detailed metrics ball-by-ball
+        async function fetchSingleMatchDetails() {
+            if (!activeMatchId) return;
+            try {
+                const response = await fetch(`${API_URL}/${activeMatchId}`);
+                const match = await response.json();
+
+                // Update text configurations inside view screens
+                document.getElementById('live-header-title').innerText = match.title;
+                document.getElementById('live-header-subtitle').innerText = match.status || "In Progress";
+                document.getElementById('live-match-format').innerText = match.matchType || "LIVE";
+                
+                // Set score metrics safely
+                document.getElementById('live-team-batting').innerText = match.teams.team1.name;
+                document.getElementById('live-main-score').innerText = match.teams.team1.score || "0/0";
+                document.getElementById('live-main-overs').innerText = match.teams.team1.overs ? `(${match.teams.team1.overs} Ov)` : "(0.0 Ov)";
+                document.getElementById('live-status-note').innerText = `👉 ${match.status || 'Match active'}`;
+                
+                if (match.lastBalls) {
+                    document.getElementById('live-situation-box').innerText = `Recent Deliveries: ${match.lastBalls}`;
+                }
+            } catch (err) {
+                console.warn("Detailed scorecard fetch lag:", err);
+            }
         }
 
-        ...
+        function startLiveTracking(matchId) {
+            activeMatchId = matchId;
+            // Switch views instantly
+            document.getElementById('dashboard-view').classList.replace('block', 'hidden');
+            document.getElementById('live-match-view').classList.replace('hidden', 'block');
+            
+            // Run instantly, then poll aggressively every 10 seconds for ball updates
+            fetchSingleMatchDetails();
+            updateLoopInterval = setInterval(fetchSingleMatchDetails, 10000);
+        }
+
+        function closeLiveMatchView() {
+            clearInterval(updateLoopInterval);
+            activeMatchId = null;
+            document.getElementById('live-match-view').classList.replace('block', 'hidden');
+            document.getElementById('dashboard-view').classList.replace('hidden', 'block');
+            fetchDashboardMatches();
+        }
+
+        // Run dashboard tracking on app boot up
+        fetchDashboardMatches();
+        setInterval(fetchDashboardMatches, 25000);
+    </script>
+</body>
+</html>
