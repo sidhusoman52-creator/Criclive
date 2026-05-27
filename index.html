@@ -99,34 +99,6 @@
         let scheduleFetched = false;
         let seriesDropdownLoaded = false;
 
-        // Enhanced Match Filter Engine
-        function isTargetMatch(match) {
-            const name = (match.name || "").toLowerCase();
-            const matchType = (match.matchType || "").toLowerCase();
-            const msg = (match.msg || "").toLowerCase();
-            const status = (match.status || "").toLowerCase();
-
-            // Strict Exclusions list (Stops County / Domestic tournaments from showing up)
-            const exclusions = [
-                "blast", "county", "trophy", "shield", "sub regional", "sub-regional", 
-                "plunket", "sheffield", "marsh", "ranji", "sayyad", "vijay hazare", 
-                "pro50", "clover", "academy", "XI", "inter-provincial"
-            ];
-
-            if (exclusions.some(term => name.includes(term) || status.includes(term))) {
-                return false;
-            }
-
-            // Target Priority Identifiers
-            const targets = ["ipl", "indian premier league", "wpl", "women", "odi", "t20i", "test match", "international"];
-            
-            // Check targets or check if the API payload metadata explicitly labels it an International game
-            const matchesTargetKeyword = targets.some(term => name.includes(term) || matchType.includes(term));
-            const isExplicitlyInternational = msg.includes("international") || matchType === "international";
-
-            return matchesTargetKeyword || isExplicitlyInternational;
-        }
-
         // 1. Core Navigation Manager System
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -166,23 +138,7 @@
                 }
 
                 if (!result.data || result.data.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No active matches on the server stream right now.</p>`;
-                    return;
-                }
-
-                // Filter live stream data array
-                const filteredLiveMatches = result.data.filter(isTargetMatch);
-
-                if (filteredLiveMatches.length === 0) {
-                    statusEl.innerHTML = `
-                        <div class="text-center p-4">
-                            <p class="text-base font-semibold text-zinc-200 mb-1">No Premium Matches Live</p>
-                            <p class="text-xs text-zinc-400">There are currently no International, Women's International, or IPL matches running at this moment.</p>
-                        </div>
-                    `;
-                    statusEl.classList.remove('hidden');
-                    containerEl.classList.add('hidden');
-                    indicatorEl.innerText = "✅ Updated";
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 Server states no international/domestic games are live right now.</p>`;
                     return;
                 }
 
@@ -190,7 +146,7 @@
                 statusEl.classList.add('hidden');
                 containerEl.classList.remove('hidden');
 
-                filteredLiveMatches.forEach(match => {
+                result.data.forEach(match => {
                     const card = document.createElement('div');
                     card.className = "bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg p-5 shadow-md flex flex-col justify-between transition-all";
 
@@ -247,18 +203,10 @@
                     return;
                 }
 
-                // Filter for upcoming games matching targets
-                const upcomingMatches = result.data.filter(match => match.matchStarted === false && isTargetMatch(match));
+                const upcomingMatches = result.data.filter(match => match.matchStarted === false);
 
                 if (upcomingMatches.length === 0) {
-                    statusEl.innerHTML = `
-                        <div class="text-center p-4">
-                            <p class="text-base font-semibold text-zinc-200 mb-1">No Upcoming Calendar Items</p>
-                            <p class="text-xs text-zinc-400">No scheduled premium Tier-1 matches or IPL events found in the database next up.</p>
-                        </div>
-                    `;
-                    statusEl.classList.remove('hidden');
-                    containerEl.classList.add('hidden');
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">No scheduled fixtures listed in database right now.</p>`;
                     return;
                 }
 
@@ -266,8 +214,7 @@
                 statusEl.classList.add('hidden');
                 containerEl.classList.remove('hidden');
 
-                // Sort out and take up to top 35 entries
-                upcomingMatches.slice(0, 35).forEach(match => {
+                upcomingMatches.slice(0, 20).forEach(match => {
                     const card = document.createElement('div');
                     card.className = "bg-zinc-900 border border-zinc-800 rounded-lg p-5 flex flex-col justify-between shadow-sm";
                     const matchDate = match.date ? new Date(match.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Date TBD';
@@ -308,15 +255,10 @@
                 dropdown.innerHTML = '<option value="" disabled selected>-- Choose an ongoing tournament --</option>';
                 
                 result.data.forEach(series => {
-                    // Quick safety text validation for rankings dropdown filters
-                    const name = series.name.toLowerCase();
-                    const filterExclusions = ["regional", "blast", "county", "division"];
-                    if (!filterExclusions.some(ex => name.includes(ex))) {
-                        const option = document.createElement('option');
-                        option.value = series.id;
-                        option.innerText = `${series.name} (${series.matches} Matches)`;
-                        dropdown.appendChild(option);
-                    }
+                    const option = document.createElement('option');
+                    option.value = series.id;
+                    option.innerText = `${series.name} (${series.matches} Matches)`;
+                    dropdown.appendChild(option);
                 });
 
                 seriesDropdownLoaded = true;
@@ -357,4 +299,23 @@
                             <span class="w-2 h-2 rounded-full bg-zinc-700"></span>${team.teamname || 'Team'}
                         </td>
                         <td class="px-3 py-3.5 text-center font-medium">${team.matches || 0}</td>
-                        <td class="px-3 py-3.5 
+                        <td class="px-3 py-3.5 text-center text-emerald-500 font-medium">${team.wins || 0}</td>
+                        <td class="px-3 py-3.5 text-center text-rose-500 font-medium">${team.loss || 0}</td>
+                        <td class="px-3 py-3.5 text-center font-bold text-lime-400 font-mono">${team.points || 0}</td>
+                        <td class="px-4 py-3.5 text-right font-mono text-zinc-400 text-xs">${team.netRunRate || '0.000'}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+            } catch (err) {
+                console.error(err);
+                statusEl.innerHTML = `<p class="text-xs text-red-400">Failed generating standing rows due to a connection error.</p>`;
+            }
+        }
+
+        // Initialize background tracking sync
+        fetchLiveScores();
+        setInterval(fetchLiveScores, 30000);
+    </script>
+</body>
+    </html>
