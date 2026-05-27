@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cricbuzz Clone - RapidAPI Fixed Engine</title>
+    <title>Cricbuzz Clone - Final Fixed Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
@@ -27,42 +27,46 @@
         <div class="bg-[#1e1e1e] rounded-xl p-5 border border-gray-800 shadow-sm">
             <div class="flex justify-between items-center mb-3">
                 <span class="text-[10px] font-bold uppercase tracking-wider bg-red-900/40 text-red-400 px-2 py-0.5 rounded flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-dot"></span> LIVE SCOREBOARD
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-dot"></span> LIVE STREAM
                 </span>
-                <span class="text-xs text-zinc-500 font-mono" id="live-over-counter">Overs: 0.0</span>
+                <span class="text-xs text-zinc-500 font-mono" id="live-over-counter">Overs: --</span>
             </div>
             
             <div class="flex justify-between items-baseline my-4">
                 <div class="min-w-0 pr-2">
-                    <h2 class="text-xl font-extrabold text-white tracking-tight truncate" id="live-batting-team">Syncing Data...</h2>
-                    <p class="text-[11px] text-[#29b6f6] font-medium mt-1 truncate" id="live-status-note">Waiting for RapidAPI stream handshake</p>
+                    <h2 class="text-xl font-extrabold text-white tracking-tight truncate" id="live-batting-team">Match Update</h2>
+                    <p class="text-[11px] text-[#29b6f6] font-medium mt-1 truncate" id="live-status-note">Connecting to commentary data stream...</p>
                 </div>
                 <div class="text-right flex-shrink-0">
-                    <div class="text-3xl font-black text-white tracking-tight" id="live-main-score">0/0</div>
-                    <p class="text-xs text-zinc-400 mt-1" id="live-crr">CRR: --</p>
+                    <div class="text-3xl font-black text-white tracking-tight" id="live-main-score">--</div>
                 </div>
             </div>
         </div>
 
-        <div id="debug-box" class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl text-xs text-zinc-400 font-mono">
-            <strong>Engine Status:</strong> Initializing connection request loop...
+        <div class="bg-[#1e1e1e] rounded-xl p-4 border border-gray-800 shadow-sm">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Ball-by-Ball Logs</h3>
+            <div id="commentary-feed-box" class="space-y-3 max-h-[400px] overflow-y-auto pr-1 divide-y divide-gray-800/60">
+                <div class="p-4 text-center text-zinc-500 text-sm">Awaiting API packet response...</div>
+            </div>
         </div>
+
+        <div id="debug-terminal" class="hidden bg-zinc-900 border border-red-900/40 p-3 rounded-xl text-xs text-red-400 font-mono"></div>
     </main>
 
     <script>
+        // Restoring the precise authorized endpoint from your working curl config
         const CONFIG = {
-            // We use the general match endpoint instead of forcing innings 2 commentary
-            url: "https://cricket-live-line-advance.p.rapidapi.com/matches/87014",
+            url: "https://cricket-live-line-advance.p.rapidapi.com/matches/87014/innings/2/commentary",
             headers: {
                 "x-rapidapi-host": "cricket-live-line-advance.p.rapidapi.com",
                 "x-rapidapi-key": "5c86953d66mshe0d3e06701aa1ddp14c43djsn3eac42f75725",
                 "Content-Type": "application/json"
             },
-            intervalMs: 10000 // Refreshes every 10 seconds
+            intervalMs: 12000 // Checked every 12 seconds
         };
 
-        async function syncRapidApiScores() {
-            const debugLog = document.getElementById('debug-box');
+        async function parseCommentaryData() {
+            const terminal = document.getElementById('debug-terminal');
             try {
                 const response = await fetch(CONFIG.url, {
                     method: "GET",
@@ -70,53 +74,62 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Server responded with status code ${response.status}`);
+                    throw new Error(`API Error ${response.status}: Access Denied. Make sure you clicked "Subscribe to Free Tier" on RapidAPI.`);
                 }
-                
+
                 const payload = await response.json();
                 
-                // Inspecting standard wrapper formats for this API provider
-                const matchData = payload.data || payload.match || payload;
-                
-                if (!matchData) {
-                    debugLog.innerText = "Error: Connected, but match data object layout is missing.";
+                // Extract out array safely based on the response format
+                const rawLogs = payload.data || payload.commentary || payload;
+                const items = Array.isArray(rawLogs) ? rawLogs : (rawLogs.result || []);
+
+                if (items.length === 0) {
+                    document.getElementById('commentary-feed-box').innerHTML = `<div class="text-center py-4 text-zinc-500 text-xs">No commentary available yet for this selection.</div>`;
                     return;
                 }
 
-                // Hide the debug terminal box once data parses successfully
-                debugLog.classList.add('hidden');
+                terminal.classList.add('hidden'); // Clear error box if things are fine
 
-                // Map elements dynamically from current live properties
-                const activeInnings = matchData.current_innings || 1;
-                const teamName = matchData.batting_team?.name || matchData.team_batting || "New Zealand";
-                const scoreRuns = matchData.runs || matchData.score?.runs || "346";
-                const scoreWickets = matchData.wickets || matchData.score?.wickets || "5";
-                const totalOvers = matchData.overs || matchData.score?.overs || "89.0";
-                const matchStatus = matchData.status || matchData.match_status || "Live play in progress";
-                const currentCrr = matchData.crr || "3.89";
+                // Read top level elements from the newest ball
+                const currentBall = items[0];
+                document.getElementById('live-main-score').innerText = currentBall.score || currentBall.runs || "Live";
+                document.getElementById('live-over-counter').innerText = `Overs: ${currentBall.over || '--'}`;
+                document.getElementById('live-batting-team').innerText = currentBall.team_name || "Batting Team";
+                document.getElementById('live-status-note').innerText = currentBall.status || "Match play tracked successfully";
 
-                // Update UI layout strings directly
-                document.getElementById('live-batting-team').innerText = teamName;
-                document.getElementById('live-main-score').innerText = `${scoreRuns}/${scoreWickets}`;
-                document.getElementById('live-over-counter').innerText = `Overs: ${totalOvers}`;
-                document.getElementById('live-status-note').innerText = `👉 ${matchStatus}`;
-                document.getElementById('live-crr').innerText = `CRR: ${currentCrr}`;
+                // Generate timeline feed
+                let feedHtml = "";
+                items.slice(0, 10).forEach(ball => {
+                    const runValue = ball.runs !== undefined ? ball.runs : "•";
+                    let badgeStyle = "bg-zinc-800 text-zinc-300";
+                    if (runValue == "4" || runValue == "6") badgeStyle = "bg-green-950 text-green-400 font-bold";
+                    if (String(runValue).toLowerCase().includes('w')) badgeStyle = "bg-red-950 text-red-400 font-bold";
 
-                // Clear layout warning notification state
+                    feedHtml += `
+                        <div class="flex items-start space-x-3 pt-3 first:pt-0">
+                            <div class="text-xs font-mono text-zinc-500 w-12">Ov ${ball.over || '0.0'}</div>
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs ${badgeStyle}">${runValue}</div>
+                            <div class="text-xs md:text-sm text-zinc-300 flex-1">${ball.commentary || ball.text || 'Delivery completed.'}</div>
+                        </div>`;
+                });
+                
+                document.getElementById('commentary-feed-box').innerHTML = feedHtml;
                 document.getElementById('sync-status').innerText = "✓ Live Synced";
                 document.getElementById('sync-status').className = "text-[#81c784]";
 
             } catch (err) {
-                console.error("RapidAPI Engine Interruption:", err);
+                console.error(err);
                 document.getElementById('sync-status').innerText = "Sync Alert";
-                document.getElementById('sync-status').className = "text-red-400 font-bold bg-red-950/40 px-2 py-0.5 rounded";
-                debugLog.innerText = `System Notice: ${err.message}. Double check that your RapidAPI plan subscription is fully active.`;
+                document.getElementById('sync-status').className = "text-red-400 font-bold";
+                
+                terminal.classList.remove('hidden');
+                terminal.innerText = `System Alert: ${err.message}`;
             }
         }
 
-        // Initialize script logic engines
-        syncRapidApiScores();
-        setInterval(syncRapidApiScores, CONFIG.intervalMs);
+        // Initialize execution loops
+        parseCommentaryData();
+        setInterval(parseCommentaryData, CONFIG.intervalMs);
     </script>
 </body>
 </html>
