@@ -54,7 +54,7 @@
     </main>
 
     <script>
-        // Restoring the precise authorized endpoint from your working curl config
+        // Your authorized RapidAPI configuration
         const CONFIG = {
             url: "https://cricket-live-line-advance.p.rapidapi.com/matches/87014/innings/2/commentary",
             headers: {
@@ -62,7 +62,7 @@
                 "x-rapidapi-key": "5c86953d66mshe0d3e06701aa1ddp14c43djsn3eac42f75725",
                 "Content-Type": "application/json"
             },
-            intervalMs: 12000 // Checked every 12 seconds
+            intervalMs: 10000 // Refreshes every 10 seconds
         };
 
         async function parseCommentaryData() {
@@ -74,42 +74,76 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API Error ${response.status}: Access Denied. Make sure you clicked "Subscribe to Free Tier" on RapidAPI.`);
+                    throw new Error(`API Error ${response.status}`);
                 }
 
                 const payload = await response.json();
-                
-                // Extract out array safely based on the response format
-                const rawLogs = payload.data || payload.commentary || payload;
-                const items = Array.isArray(rawLogs) ? rawLogs : (rawLogs.result || []);
+                console.log("Raw API Payload Received:", payload); // Visible in browser console
+
+                // Foolproof Array Finder: Checks every common layout wrapper used by this API
+                let items = [];
+                if (Array.isArray(payload)) {
+                    items = payload;
+                } else if (payload.data && Array.isArray(payload.data)) {
+                    items = payload.data;
+                } else if (payload.commentary && Array.isArray(payload.commentary)) {
+                    items = payload.commentary;
+                } else if (payload.response && Array.isArray(payload.response)) {
+                    items = payload.response;
+                } else if (typeof payload === 'object' && payload !== null) {
+                    // If the items are wrapped inside an inner object key, extract them
+                    const objectKeys = Object.keys(payload);
+                    for (let key of objectKeys) {
+                        if (Array.isArray(payload[key])) {
+                            items = payload[key];
+                            break;
+                        }
+                    }
+                }
+
+                // Fallback: If it's still not an array, check if there's a single match object
+                if (items.length === 0 && (payload.score || payload.runs)) {
+                    items = [payload]; 
+                }
 
                 if (items.length === 0) {
-                    document.getElementById('commentary-feed-box').innerHTML = `<div class="text-center py-4 text-zinc-500 text-xs">No commentary available yet for this selection.</div>`;
+                    document.getElementById('commentary-feed-box').innerHTML = `
+                        <div class="text-center py-6 text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-lg">
+                            Connected! Awaiting active Innings 2 commentary packets...
+                        </div>`;
                     return;
                 }
 
-                terminal.classList.add('hidden'); // Clear error box if things are fine
+                if (terminal) terminal.classList.add('hidden');
 
-                // Read top level elements from the newest ball
+                // 1. Process and Update Top Live Scorecard Header
                 const currentBall = items[0];
-                document.getElementById('live-main-score').innerText = currentBall.score || currentBall.runs || "Live";
-                document.getElementById('live-over-counter').innerText = `Overs: ${currentBall.over || '--'}`;
-                document.getElementById('live-batting-team').innerText = currentBall.team_name || "Batting Team";
-                document.getElementById('live-status-note').innerText = currentBall.status || "Match play tracked successfully";
+                
+                // Dynamically resolve score variables across different naming conventions
+                const scoreDisplay = currentBall.score || currentBall.full_score || 
+                                     (currentBall.runs !== undefined ? `${currentBall.runs}/${currentBall.wickets || 0}` : "Live");
+                                     
+                document.getElementById('live-main-score').innerText = scoreDisplay;
+                document.getElementById('live-over-counter').innerText = `Overs: ${currentBall.over || currentBall.overs || '--'}`;
+                document.getElementById('live-batting-team').innerText = currentBall.team_name || currentBall.batting_team || "New Zealand";
+                document.getElementById('live-status-note').innerText = currentBall.status || currentBall.match_status || "Match data streaming live";
 
-                // Generate timeline feed
+                // 2. Build the Over Timeline Feed List
                 let feedHtml = "";
-                items.slice(0, 10).forEach(ball => {
-                    const runValue = ball.runs !== undefined ? ball.runs : "•";
+                items.slice(0, 15).forEach(ball => {
+                    const runValue = ball.runs !== undefined ? ball.runs : (ball.ball_runs !== undefined ? ball.ball_runs : "•");
+                    const overValue = ball.over || ball.overs || ball.over_no || "0.0";
+                    const textValue = ball.commentary || ball.text || ball.desc || "Delivery tracked.";
+                    
                     let badgeStyle = "bg-zinc-800 text-zinc-300";
-                    if (runValue == "4" || runValue == "6") badgeStyle = "bg-green-950 text-green-400 font-bold";
-                    if (String(runValue).toLowerCase().includes('w')) badgeStyle = "bg-red-950 text-red-400 font-bold";
+                    if (runValue == "4" || runValue == "6") badgeStyle = "bg-green-950 text-green-400 font-bold border border-green-900/30";
+                    if (String(runValue).toLowerCase().includes('w') || ball.wicket) badgeStyle = "bg-red-950 text-red-400 font-bold border border-red-900/30";
 
                     feedHtml += `
                         <div class="flex items-start space-x-3 pt-3 first:pt-0">
-                            <div class="text-xs font-mono text-zinc-500 w-12">Ov ${ball.over || '0.0'}</div>
-                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs ${badgeStyle}">${runValue}</div>
-                            <div class="text-xs md:text-sm text-zinc-300 flex-1">${ball.commentary || ball.text || 'Delivery completed.'}</div>
+                            <div class="text-xs font-mono font-bold text-zinc-500 w-12 pt-0.5">Ov ${overValue}</div>
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${badgeStyle}">${runValue}</div>
+                            <div class="text-xs md:text-sm text-zinc-300 flex-1 leading-relaxed">${textValue}</div>
                         </div>`;
                 });
                 
@@ -118,16 +152,18 @@
                 document.getElementById('sync-status').className = "text-[#81c784]";
 
             } catch (err) {
-                console.error(err);
+                console.error("Parser Error:", err);
                 document.getElementById('sync-status').innerText = "Sync Alert";
                 document.getElementById('sync-status').className = "text-red-400 font-bold";
                 
-                terminal.classList.remove('hidden');
-                terminal.innerText = `System Alert: ${err.message}`;
+                if (terminal) {
+                    terminal.classList.remove('hidden');
+                    terminal.innerText = `System Alert: ${err.message}`;
+                }
             }
         }
 
-        // Initialize execution loops
+        // Run on app initiation
         parseCommentaryData();
         setInterval(parseCommentaryData, CONFIG.intervalMs);
     </script>
