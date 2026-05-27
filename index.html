@@ -4,318 +4,313 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cricbuzz Clone</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .cricbuzz-dark { background-color: #1a1a1a; }
-        .cb-nav { background-color: #004f3f; } /* Classic Cricbuzz Green */
-        .cb-bg { background-color: #0f1011; }
-        /* Simple utility class for table scrolling on tiny screens */
-        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        /* Pulse animation for the live dot indicator */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .4; }
+        }
+        .animate-pulse-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
     </style>
 </head>
-<body class="cb-bg min-h-screen text-gray-100 font-sans">
+<body class="bg-[#121212] text-gray-200 font-sans antialiased selection:bg-[#004d40]">
 
-    <header class="cb-nav text-white shadow-md">
-        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <span class="text-2xl font-black tracking-tighter bg-lime-500 text-black px-2 py-0.5 rounded-sm">cricbuzz</span>
-                <span class="text-xs font-bold uppercase tracking-widest text-lime-400 border border-lime-400/30 px-1.5 py-0.5 rounded animate-pulse">Live App</span>
+    <!-- ======================================================== -->
+    <!-- SCREEN 1: MATCH LIST DASHBOARD (YOUR CURRENT INTERFACE) -->
+    <!-- ======================================================== -->
+    <div id="dashboard-view" class="block">
+        <!-- Top Navbar -->
+        <header class="bg-[#004d40] p-4 flex items-center justify-between shadow-md">
+            <div class="flex items-center space-x-3">
+                <span class="text-xl font-bold tracking-tight text-white">Cricbuzz Clone</span>
+                <span class="bg-[#1b5e20] text-[#81c784] text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide">LIVE APP</span>
             </div>
-            <div id="refresh-indicator" class="text-xs text-lime-300 font-mono bg-emerald-900/50 px-2 py-1 rounded border border-emerald-700/30">
-                🔄 Syncing live...
+            <div class="flex items-center space-x-1 text-xs text-[#81c784] font-medium bg-[#1e1e1e]/40 px-2 py-1 rounded">
+                <span>✓</span> <span>Updated</span>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <nav class="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
-        <div class="max-w-5xl mx-auto flex overflow-x-auto font-medium text-sm">
-            <button onclick="switchTab('live')" id="tab-live" class="py-3 px-6 border-b-2 border-lime-500 text-lime-500 whitespace-nowrap font-bold transition-all">
-                Live Matches
-            </button>
-            <button onclick="switchTab('schedule')" id="tab-schedule" class="py-3 px-6 border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap transition-all">
-                Schedules
-            </button>
-            <button onclick="switchTab('tables')" id="tab-tables" class="py-3 px-6 border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap transition-all">
-                Points Table
-            </button>
-        </div>
-    </nav>
+        <!-- Main Categories Tab Menu -->
+        <nav class="bg-[#1e1e1e] border-b border-gray-800 flex text-xs md:text-sm font-semibold tracking-wide">
+            <button class="flex-1 py-3 text-center border-b-2 border-[#81c784] text-[#81c784]">Live Matches</button>
+            <button class="flex-1 py-3 text-center text-gray-400 hover:text-gray-200">Schedules</button>
+            <button class="flex-1 py-3 text-center text-gray-400 hover:text-gray-200">Points Table</button>
+        </nav>
 
-    <main class="max-w-5xl mx-auto px-4 py-6">
-        
-        <section id="content-live" class="tab-content">
-            <div id="status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
-                <p class="text-sm text-zinc-400 animate-pulse">Connecting to live Cricbuzz server stream...</p>
-            </div>
-            <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+        <!-- Container for Live Match Feed Cards -->
+        <main class="max-w-xl mx-auto p-4 space-y-4">
+            
+            <!-- CLICKABLE CARD: Ireland vs New Zealand -->
+            <div onclick="openLiveMatchView('nz-ire-test-2026')" class="bg-[#1e1e1e] rounded-xl p-4 border border-gray-800 shadow-sm hover:border-zinc-700 transition cursor-pointer group active:scale-[0.99]">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">TEST</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-red-900/30 text-red-400 px-2 py-0.5 rounded flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-dot"></span> LIVE
+                    </span>
                 </div>
-        </section>
-
-        <section id="content-schedule" class="tab-content hidden">
-            <div id="schedule-status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
-                <p class="text-sm text-zinc-400 animate-pulse">Loading upcoming cricket calendar...</p>
-            </div>
-            <div id="schedule-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-                </div>
-        </section>
-
-        <section id="content-tables" class="tab-content hidden">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl mb-6">
-                <label for="series-select" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">Select Tournament / Series</label>
-                <select id="series-select" onchange="handleSeriesChange()" class="w-full md:w-80 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg p-2.5 text-sm focus:outline-none focus:border-lime-500">
-                    </select>
-            </div>
-
-            <div id="table-status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
-                <p class="text-sm text-zinc-400">Select a tournament above to view current group standings.</p>
-            </div>
-
-            <div id="table-data-container" class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 shadow-xl hidden table-container">
-                <table class="w-full text-left text-sm text-zinc-300">
-                    <thead class="text-xs uppercase bg-zinc-800 text-zinc-400 font-mono">
-                        <tr>
-                            <th class="px-4 py-3 rounded-l-lg">Team</th>
-                            <th class="px-3 py-3 text-center">P</th>
-                            <th class="px-3 py-3 text-center">W</th>
-                            <th class="px-3 py-3 text-center">L</th>
-                            <th class="px-3 py-3 text-center text-lime-400">Pts</th>
-                            <th class="px-4 py-3 text-right rounded-r-lg">NRR</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body" class="divide-y divide-zinc-800">
-                        </tbody>
-                </table>
-            </div>
-        </section>
-
-    </main>
-
-    <script>
-        const API_KEY = "21ba7825-b668-4ef9-b5ed-91680688b513"; 
-        const LIVE_API_URL = `https://api.cricapi.com/v1/currentMatches?apikey=${API_KEY}`;
-        const SCHEDULE_API_URL = `https://api.cricapi.com/v1/matches?apikey=${API_KEY}`;
-        const SERIES_API_URL = `https://api.cricapi.com/v1/series?apikey=${API_KEY}&offset=0`;
-
-        let scheduleFetched = false;
-        let seriesDropdownLoaded = false;
-
-        // 1. Core Navigation Manager System
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('nav button').forEach(btn => {
-                btn.classList.remove('text-lime-500', 'border-lime-500', 'font-bold');
-                btn.classList.add('text-gray-400', 'border-transparent');
-            });
-
-            document.getElementById(`content-${tabName}`).classList.remove('hidden');
-            const activeBtn = document.getElementById(`tab-${tabName}`);
-            activeBtn.classList.remove('text-gray-400', 'border-transparent');
-            activeBtn.classList.add('text-lime-500', 'border-lime-500', 'font-bold');
-
-            if (tabName === 'schedule' && !scheduleFetched) {
-                fetchSchedules();
-            }
-            if (tabName === 'tables' && !seriesDropdownLoaded) {
-                populateSeriesDropdown();
-            }
-        }
-
-        // 2. Cricbuzz Interactive Live Feed Fetcher Engine
-        async function fetchLiveScores() {
-            const statusEl = document.getElementById('status-message');
-            const containerEl = document.getElementById('matches-container');
-            const indicatorEl = document.getElementById('refresh-indicator');
-
-            try {
-                indicatorEl.innerText = "🔄 Syncing live...";
-                const response = await fetch(LIVE_API_URL);
-                if (!response.ok) throw new Error(`HTTP Error Code ${response.status}`);
-                const result = await response.json();
-
-                if (result.status !== "success") {
-                    statusEl.innerHTML = `<p class="text-sm text-red-400 font-mono">API Processing Fault: ${result.reason}</p>`;
-                    return;
-                }
-
-                if (!result.data || result.data.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 Server states no international/domestic games are live right now.</p>`;
-                    return;
-                }
-
-                containerEl.innerHTML = '';
-                statusEl.classList.add('hidden');
-                containerEl.classList.remove('hidden');
-
-                result.data.forEach(match => {
-                    const card = document.createElement('div');
-                    card.className = "bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg p-5 shadow-md flex flex-col justify-between transition-all";
-
-                    const score1 = match.score && match.score[0] ? `${match.score[0].r}/${match.score[0].w} <span class="text-xs text-zinc-500 font-normal">(${match.score[0].o} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
-                    const score2 = match.score && match.score[1] ? `${match.score[1].r}/${match.score[1].w} <span class="text-xs text-zinc-500 font-normal">(${match.score[1].o} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
-
-                    card.innerHTML = `
-                        <div>
-                            <div class="flex justify-between items-center text-[11px] font-bold tracking-wider text-zinc-500 uppercase border-b border-zinc-800 pb-2 mb-3">
-                                <span>${match.matchType || 'International'}</span>
-                                <span class="flex items-center gap-1.5 text-rose-500 bg-rose-950/20 px-2 py-0.5 rounded font-mono text-[10px]">
-                                    <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>LIVE
-                                </span>
-                            </div>
-                            <h2 class="text-xs text-zinc-400 line-clamp-1 mb-4 font-medium">${match.name}</h2>
-                            <div class="space-y-3.5 my-2">
-                                <div class="flex justify-between items-center">
-                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${match.teams[0]}</span>
-                                    <span class="font-mono text-sm font-bold text-zinc-100">${score1}</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${match.teams[1]}</span>
-                                    <span class="font-mono text-sm font-bold text-zinc-100">${score2}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mt-5 pt-3 border-t border-zinc-800/80 text-xs font-semibold text-sky-400 tracking-wide">
-                            👉 ${match.status || 'Match calculations updating...'}
-                        </div>
-                    `;
-                    containerEl.appendChild(card);
-                });
-
-                indicatorEl.innerText = "✅ Updated";
-            } catch (err) {
-                console.error(err);
-                indicatorEl.innerText = "❌ Offline";
-                statusEl.innerHTML = `<p class="text-xs text-red-500">Network connection interruption. Retrying shortly...</p>`;
-            }
-        }
-
-        // 3. Cricbuzz Schedule Engine Loader
-        async function fetchSchedules() {
-            const statusEl = document.getElementById('schedule-status-message');
-            const containerEl = document.getElementById('schedule-container');
-
-            try {
-                const response = await fetch(SCHEDULE_API_URL);
-                if (!response.ok) throw new Error("Could not download fixture list.");
-                const result = await response.json();
-
-                if (result.status !== "success" || !result.data) {
-                    statusEl.innerHTML = `<p class="text-sm text-amber-400">Failed parsing schedules from provider.</p>`;
-                    return;
-                }
-
-                const upcomingMatches = result.data.filter(match => match.matchStarted === false);
-
-                if (upcomingMatches.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">No scheduled fixtures listed in database right now.</p>`;
-                    return;
-                }
-
-                containerEl.innerHTML = '';
-                statusEl.classList.add('hidden');
-                containerEl.classList.remove('hidden');
-
-                upcomingMatches.slice(0, 20).forEach(match => {
-                    const card = document.createElement('div');
-                    card.className = "bg-zinc-900 border border-zinc-800 rounded-lg p-5 flex flex-col justify-between shadow-sm";
-                    const matchDate = match.date ? new Date(match.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Date TBD';
-
-                    card.innerHTML = `
-                        <div>
-                            <div class="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-wide border-b border-zinc-800/60 pb-2 mb-3">
-                                <span>${match.matchType || 'Match'}</span>
-                                <span class="text-lime-400 font-mono bg-lime-950/20 px-2 py-0.5 rounded">${matchDate}</span>
-                            </div>
-                            <h3 class="text-sm font-bold text-zinc-200 mb-1">${match.name}</h3>
-                            <p class="text-xs text-zinc-500 mb-4">${match.venue || 'Venue information not listed yet'}</p>
-                        </div>
-                        <div class="pt-3 border-t border-zinc-800/50 flex justify-between items-center text-[11px] text-zinc-400 font-medium">
-                            <span>Teams: ${match.teams ? match.teams.join(' vs ') : 'TBD'}</span>
-                            <span class="text-amber-500 font-semibold bg-amber-950/10 px-1.5 py-0.5 rounded border border-amber-900/20">Upcoming</span>
-                        </div>
-                    `;
-                    containerEl.appendChild(card);
-                });
-
-                scheduleFetched = true;
-            } catch (err) {
-                console.error(err);
-                statusEl.innerHTML = `<p class="text-xs text-red-400">Error rendering upcoming calendar list.</p>`;
-            }
-        }
-
-        // 4. Cricbuzz Tournament Rankings Engine
-        async function populateSeriesDropdown() {
-            const dropdown = document.getElementById('series-select');
-            try {
-                const response = await fetch(SERIES_API_URL);
-                const result = await response.json();
-
-                if (result.status !== "success" || !result.data) return;
-
-                dropdown.innerHTML = '<option value="" disabled selected>-- Choose an ongoing tournament --</option>';
                 
-                result.data.forEach(series => {
-                    const option = document.createElement('option');
-                    option.value = series.id;
-                    option.innerText = `${series.name} (${series.matches} Matches)`;
-                    dropdown.appendChild(option);
-                });
+                <h3 class="text-xs text-gray-400 truncate mb-3 group-hover:text-gray-300">
+                    Ireland vs New Zealand, Only Test, New Zealand tour of Ireland...
+                </h3>
 
-                seriesDropdownLoaded = true;
-            } catch (err) {
-                console.error("Error populating dropdown:", err);
-            }
+                <div class="space-y-2.5">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-white text-base">Ireland</span>
+                        <span class="font-extrabold text-white text-base">104/4 <span class="text-xs font-normal text-gray-400">(31 ov)</span></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-zinc-400 text-base">New Zealand</span>
+                        <span class="text-xs text-zinc-500 font-medium">Yet to bat</span>
+                    </div>
+                </div>
+
+                <div class="text-xs text-[#29b6f6] font-medium pt-3 mt-3 border-t border-gray-800/60">
+                    👉 Ireland opt to bowl
+                </div>
+            </div>
+
+            <!-- CARD 2: Kenya vs Sierra Leone -->
+            <div class="bg-[#1e1e1e] rounded-xl p-4 border border-gray-800 shadow-sm opacity-70">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">T20</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">LIVE</span>
+                </div>
+                <h3 class="text-xs text-gray-400 truncate mb-3">Kenya vs Sierra Leone, 11th Match, ICC Men's T20 World Cup S...</h3>
+                <div class="space-y-2.5">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-white text-base">Kenya</span>
+                        <span class="font-extrabold text-white text-base">135/5 <span class="text-xs font-normal text-gray-400">(20 ov)</span></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-white text-base">Sierra Leone</span>
+                        <span class="font-extrabold text-white text-base">97/9 <span class="text-xs font-normal text-gray-400">(20 ov)</span></span>
+                    </div>
+                </div>
+                <div class="text-xs text-[#29b6f6] font-medium pt-3 mt-3 border-t border-gray-800/60">
+                    👉 Kenya won by 38 runs
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- SCREEN 2: LIVE MATCH VIEW INTERFACE (LIVE TAB & DETAILS) -->
+    <!-- ======================================================== -->
+    <div id="live-match-view" class="hidden">
+        <!-- Match Specific Dynamic Header Nav -->
+        <div class="bg-[#004d40] p-4 flex items-center shadow-md sticky top-0 z-10">
+            <button onclick="closeLiveMatchView()" class="mr-4 text-white text-2xl font-bold leading-none focus:outline-none hover:text-gray-300">
+                &larr;
+            </button>
+            <div class="min-w-0 flex-1">
+                <h1 class="text-white font-bold text-sm md:text-base truncate">Ireland vs New Zealand, Only Test</h1>
+                <p class="text-[11px] text-zinc-300 truncate">New Zealand tour of Ireland, 2026</p>
+            </div>
+        </div>
+
+        <!-- Secondary Internal Tab Row -->
+        <div class="bg-[#1e1e1e] border-b border-gray-800 flex text-xs font-semibold tracking-wider sticky top-[64px] z-10">
+            <button class="flex-1 py-3 text-center border-b-2 border-[#81c784] text-[#81c784]">LIVE</button>
+            <button class="flex-1 py-3 text-center text-gray-400">SCORECARD</button>
+            <button class="flex-1 py-3 text-center text-gray-400">COMMENTARY</button>
+        </div>
+
+        <!-- Live Content Display Container -->
+        <div class="max-w-xl mx-auto p-4 space-y-4">
+            
+            <!-- Overview Box Card -->
+            <div class="bg-[#1e1e1e] rounded-xl p-4 border border-gray-800 shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-red-900/40 text-red-400 px-2 py-0.5 rounded flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-dot"></span> LIVE
+                    </span>
+                    <span class="text-[11px] text-gray-400 font-medium">Malahide, Dublin</span>
+                </div>
+                
+                <div class="flex justify-between items-baseline my-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Ireland</h2>
+                        <p class="text-[11px] text-gray-400 mt-0.5">CRR: 3.35</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-extrabold text-white tracking-tight">104/4</div>
+                        <div class="text-xs text-gray-400">(31.0 Ov)</div>
+                    </div>
+                </div>
+                
+                <div class="text-xs text-[#81c784] font-medium pt-2 border-t border-gray-800/60">
+                    👉 Ireland opt to bowl (Day 1)
+                </div>
+            </div>
+
+            <!-- Miniature Realtime Live Scoreboard Grid (Batsman & Bowler Table) -->
+            <div class="bg-[#1e1e1e] rounded-xl border border-gray-800 overflow-hidden shadow-sm text-xs">
+                <!-- Batsman Column Titles -->
+                <div class="grid grid-cols-12 bg-[#262626] p-2.5 text-gray-400 font-semibold border-b border-gray-800">
+                    <div class="col-span-5">Batter</div>
+                    <div class="col-span-2 text-center">R</div>
+                    <div class="col-span-2 text-center">B</div>
+                    <div class="col-span-1 text-center">4s</div>
+                    <div class="col-span-1 text-center">6s</div>
+                    <div class="col-span-1 text-right">SR</div>
+                </div>
+                
+                <!-- On-Strike Batsman Row -->
+                <div class="grid grid-cols-12 p-3 border-b border-gray-800/40 bg-zinc-800/30">
+                    <div class="col-span-5 font-semibold text-white truncate">
+                        Harry Tector <span class="text-[#81c784] font-bold ml-0.5">*</span>
+                    </div>
+                    <div class="col-span-2 text-center font-bold text-white">42</div>
+                    <div class="col-span-2 text-center text-gray-400">68</div>
+                    <div class="col-span-1 text-center text-gray-400">5</div>
+                    <div class="col-span-1 text-center text-gray-400">1</div>
+                    <div class="col-span-1 text-right text-gray-400">61.76</div>
+                </div>
+                
+                <!-- Off-Strike Batsman Row -->
+                <div class="grid grid-cols-12 p-3 border-b border-gray-800/20">
+                    <div class="col-span-5 font-medium text-zinc-300 truncate">Lorcan Tucker</div>
+                    <div class="col-span-2 text-center font-bold text-zinc-300">18</div>
+                    <div class="col-span-2 text-center text-gray-400">24</div>
+                    <div class="col-span-1 text-center text-gray-400">2</div>
+                    <div class="col-span-1 text-center text-gray-400">0</div>
+                    <div class="col-span-1 text-right text-gray-400">75.00</div>
+                </div>
+
+                <!-- Bowler Column Titles -->
+                <div class="grid grid-cols-12 bg-[#262626] p-2.5 text-gray-400 font-semibold border-t border-gray-800 border-b border-gray-800 mt-2">
+                    <div class="col-span-5">Bowler</div>
+                    <div class="col-span-2 text-center">O</div>
+                    <div class="col-span-2 text-center">M</div>
+                    <div class="col-span-2 text-center">R</div>
+                    <div class="col-span-1 text-right">W</div>
+                </div>
+                
+                <!-- Active Bowler Row -->
+                <div class="grid grid-cols-12 p-3 bg-zinc-800/30 border-b border-gray-800/20">
+                    <div class="col-span-5 font-semibold text-white truncate">Tim Southee</div>
+                    <div class="col-span-2 text-center text-white">11.0</div>
+                    <div class="col-span-2 text-center text-gray-400">3</div>
+                    <div class="col-span-2 text-center text-white">28</div>
+                    <div class="col-span-1 text-right font-bold text-white">2</div>
+                </div>
+
+                <!-- Secondary Inactive Bowler Row -->
+                <div class="grid grid-cols-12 p-3">
+                    <div class="col-span-5 font-medium text-zinc-300 truncate">Matt Henry</div>
+                    <div class="col-span-2 text-center text-zinc-300">10.0</div>
+                    <div class="col-span-2 text-center text-gray-400">2</div>
+                    <div class="col-span-2 text-center text-zinc-300">34</div>
+                    <div class="col-span-1 text-right font-bold text-zinc-300">1</div>
+                </div>
+            </div>
+
+            <!-- Ball-by-Ball Live Commentary Logs -->
+            <div class="space-y-2.5">
+                <h3 class="text-xs font-bold text-gray-400 tracking-wider uppercase pl-1">Written Commentary</h3>
+                
+                <div class="bg-[#1e1e1e] rounded-xl border border-gray-800 divide-y divide-gray-800/60 overflow-hidden">
+                    
+                    <!-- Ball Element: 31.0 -->
+                    <div class="p-3.5 hover:bg-zinc-800/10 transition-colors">
+                        <div class="flex items-center gap-3 mb-1.5">
+                            <span class="font-bold text-[11px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-300">31.0</span>
+                            <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">1 Run</span>
+                            <span class="text-xs text-zinc-400 font-medium">Southee to Tector</span>
+                        </div>
+                        <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+                            Southee drops it short, Tector stays back and tucks it away smoothly toward deep square leg to retain the strike.
+                        </p>
+                    </div>
+
+                    <!-- Ball Element: 30.5 -->
+                    <div class="p-3.5 hover:bg-zinc-800/10 transition-colors">
+                        <div class="flex items-center gap-3 mb-1.5">
+                            <span class="font-bold text-[11px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-300">30.5</span>
+                            <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">No Run</span>
+                            <span class="text-xs text-zinc-400 font-medium">Southee to Tector</span>
+                        </div>
+                        <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+                            Good length delivery just outside the off-stump channel. Left alone confidently by Tector as it sails cleanly into the wicketkeeper's gloves.
+                        </p>
+                    </div>
+
+                    <!-- Ball Element: 30.4 (Four Run Border Accent) -->
+                    <div class="p-3.5 hover:bg-zinc-800/10 transition-colors">
+                        <div class="flex items-center gap-3 mb-1.5">
+                            <span class="font-bold text-[11px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-300">30.4</span>
+                            <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-green-950 text-green-400">FOUR</span>
+                            <span class="text-xs text-zinc-400 font-medium">Southee to Tector</span>
+                        </div>
+                        <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+                            <strong class="text-white">CRACK!</strong> Beautifully timed. Slightly overpitched around off-stump, Tector leans fluidly into a gorgeous cover drive that completely outpaces the tracking fielder to hit the boundary rope.
+                        </p>
+                    </div>
+
+                    <!-- Ball Element: 30.3 -->
+                    <div class="p-3.5 hover:bg-zinc-800/10 transition-colors">
+                        <div class="flex items-center gap-3 mb-1.5">
+                            <span class="font-bold text-[11px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-300">30.3</span>
+                            <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">1 Run</span>
+                            <span class="text-xs text-zinc-400 font-medium">Southee to Tucker</span>
+                        </div>
+                        <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+                            Full on middle and leg, Tucker pushes it softly down the ground tracking towards long-on for a quick single.
+                        </p>
+                    </div>
+
+                    <!-- Ball Element: 30.2 (Wicket Border Accent) -->
+                    <div class="p-3.5 hover:bg-zinc-800/10 transition-colors">
+                        <div class="flex items-center gap-3 mb-1.5">
+                            <span class="font-bold text-[11px] bg-zinc-800 px-2 py-0.5 rounded text-zinc-300">30.2</span>
+                            <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-red-950 text-red-400">WICKET</span>
+                            <span class="text-xs text-zinc-400 font-medium">Southee to Tucker</span>
+                        </div>
+                        <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+                            <strong class="text-red-400">OUT! Edged and taken!</strong> Tremendous delivery from Southee. Pulls his length back just enough to force Tucker onto the back foot, generating late bounce that catches the outside shoulder of the bat straight to second slip. Huge breakthrough!
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- JAVASCRIPT SCREEN ROUTING SYSTEM -->
+    <!-- ======================================================== -->
+    <script>
+        // DOM View Selectors
+        const dashboardView = document.getElementById('dashboard-view');
+        const liveMatchView = document.getElementById('live-match-view');
+
+        /**
+         * Closes the Match List and displays the Interactive Live Interface
+         * @param {string} matchId - Target Match Unique String Key Identification
+         */
+        function openLiveMatchView(matchId) {
+            // Smoothly swap structural layout display classes
+            dashboardView.classList.replace('block', 'hidden');
+            liveMatchView.classList.replace('hidden', 'block');
+            
+            // Scroll interface container directly to the top upon entry
+            window.scrollTo({ top: 0, behavior: 'instant' });
         }
 
-        async function handleSeriesChange() {
-            const seriesId = document.getElementById('series-select').value;
-            const statusEl = document.getElementById('table-status-message');
-            const dataContainerEl = document.getElementById('table-data-container');
-            const tbody = document.getElementById('table-body');
-
-            statusEl.innerHTML = `<p class="text-sm text-zinc-400 animate-pulse">Fetching official series metrics matrix...</p>`;
-            statusEl.classList.remove('hidden');
-            dataContainerEl.classList.add('hidden');
-
-            try {
-                const url = `https://api.cricapi.com/v1/series_points?apikey=${API_KEY}&id=${seriesId}`;
-                const response = await fetch(url);
-                const result = await response.json();
-
-                if (result.status !== "success" || !result.data || result.data.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-amber-400">⚠️ Standing metrics table not initialized yet by provider for this series.</p>`;
-                    return;
-                }
-
-                tbody.innerHTML = '';
-                statusEl.classList.add('hidden');
-                dataContainerEl.classList.remove('hidden');
-
-                result.data.forEach(team => {
-                    const row = document.createElement('tr');
-                    row.className = "hover:bg-zinc-800/40 border-b border-zinc-800/50 transition-colors";
-                    row.innerHTML = `
-                        <td class="px-4 py-3.5 font-bold text-zinc-100 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-zinc-700"></span>${team.teamname || 'Team'}
-                        </td>
-                        <td class="px-3 py-3.5 text-center font-medium">${team.matches || 0}</td>
-                        <td class="px-3 py-3.5 text-center text-emerald-500 font-medium">${team.wins || 0}</td>
-                        <td class="px-3 py-3.5 text-center text-rose-500 font-medium">${team.loss || 0}</td>
-                        <td class="px-3 py-3.5 text-center font-bold text-lime-400 font-mono">${team.points || 0}</td>
-                        <td class="px-4 py-3.5 text-right font-mono text-zinc-400 text-xs">${team.netRunRate || '0.000'}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-
-            } catch (err) {
-                console.error(err);
-                statusEl.innerHTML = `<p class="text-xs text-red-400">Failed generating standing rows due to a connection error.</p>`;
-            }
+        /**
+         * Closes Live View Interface and routes back to Match Feed list panel
+         */
+        function closeLiveMatchView() {
+            liveMatchView.classList.replace('block', 'hidden');
+            dashboardView.classList.replace('hidden', 'block');
         }
-
-        // Initialize background tracking sync
-        fetchLiveScores();
-        setInterval(fetchLiveScores, 30000);
     </script>
+
 </body>
-</html>
+                </html>
