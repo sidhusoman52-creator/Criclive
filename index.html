@@ -1,425 +1,321 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cricbuzz Clone</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        body {
-            background: #0f1011;
-            color: #e5e7eb;
-            font-family: Arial, sans-serif;
-        }
-        .cb-nav {
-            background: #005c46;
-        }
-        .tab-btn {
-            padding: 16px 20px;
-            color: #a1a1aa;
-            border-bottom: 2px solid transparent;
-            cursor: pointer;
-            white-space: nowrap;
-            font-weight: 600;
-        }
-        .tab-active {
-            color: #84cc16;
-            border-bottom-color: #84cc16;
-        }
-        .match-card {
-            background: #18181b;
-            border: 1px solid #27272a;
-            border-radius: 18px;
-            padding: 18px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-        }
-        .live-dot {
-            width: 10px;
-            height: 10px;
-            background: #ff1d25;
-            border-radius: 9999px;
-            animation: pulse 1.1s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.85); }
-            100% { opacity: 1; transform: scale(1); }
-        }
+        .cricbuzz-dark { background-color: #1a1a1a; }
+        .cb-nav { background-color: #004f3f; } /* Classic Cricbuzz Green */
+        .cb-bg { background-color: #0f1011; }
+        /* Simple utility class for table scrolling on tiny screens */
+        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     </style>
 </head>
-<body>
+<body class="cb-bg min-h-screen text-gray-100 font-sans">
 
-    <header class="cb-nav shadow-lg">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+    <header class="cb-nav text-white shadow-md">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="bg-lime-500 text-black px-3 py-1 rounded font-black text-xl">
-                    cricbuzz
-                </div>
-                <div class="text-lime-400 text-xs font-bold uppercase tracking-widest">
-                    LIVE
-                </div>
+                <span class="text-2xl font-black tracking-tighter bg-lime-500 text-black px-2 py-0.5 rounded-sm">cricbuzz</span>
+                <span class="text-xs font-bold uppercase tracking-widest text-lime-400 border border-lime-400/30 px-1.5 py-0.5 rounded animate-pulse">Live App</span>
             </div>
-            <div id="refresh-status" class="text-xs text-lime-300 font-semibold">
-                Updated
+            <div id="refresh-indicator" class="text-xs text-lime-300 font-mono bg-emerald-900/50 px-2 py-1 rounded border border-emerald-700/30">
+                🔄 Syncing live...
             </div>
         </div>
     </header>
 
     <nav class="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto flex overflow-x-auto">
-            <button id="live-tab" class="tab-btn tab-active" onclick="switchTab('live')">
+        <div class="max-w-5xl mx-auto flex overflow-x-auto font-medium text-sm">
+            <button onclick="switchTab('live')" id="tab-live" class="py-3 px-6 border-b-2 border-lime-500 text-lime-500 whitespace-nowrap font-bold transition-all">
                 Live Matches
             </button>
-            <button id="schedule-tab" class="tab-btn" onclick="switchTab('schedule')">
-                Upcoming Matches
+            <button onclick="switchTab('schedule')" id="tab-schedule" class="py-3 px-6 border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap transition-all">
+                Schedules
+            </button>
+            <button onclick="switchTab('tables')" id="tab-tables" class="py-3 px-6 border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap transition-all">
+                Points Table
             </button>
         </div>
     </nav>
 
-    <main class="max-w-6xl mx-auto px-4 py-6">
-        <section id="live-section">
-            <div id="live-loading" class="text-center text-zinc-400 py-10">
-                Loading live matches...
+    <main class="max-w-5xl mx-auto px-4 py-6">
+        
+        <section id="content-live" class="tab-content">
+            <div id="status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
+                <p class="text-sm text-zinc-400 animate-pulse">Connecting to live Cricbuzz server stream...</p>
             </div>
-            <div id="live-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden"></div>
+            <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                </div>
         </section>
 
-        <section id="schedule-section" class="hidden">
-            <div id="schedule-loading" class="text-center text-zinc-400 py-10">
-                Loading upcoming matches...
+        <section id="content-schedule" class="tab-content hidden">
+            <div id="schedule-status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
+                <p class="text-sm text-zinc-400 animate-pulse">Loading upcoming cricket calendar...</p>
             </div>
-            <div id="schedule-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden"></div>
+            <div id="schedule-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                </div>
         </section>
+
+        <section id="content-tables" class="tab-content hidden">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl mb-6">
+                <label for="series-select" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">Select Tournament / Series</label>
+                <select id="series-select" onchange="handleSeriesChange()" class="w-full md:w-80 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg p-2.5 text-sm focus:outline-none focus:border-lime-500">
+                    </select>
+            </div>
+
+            <div id="table-status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
+                <p class="text-sm text-zinc-400">Select a tournament above to view current group standings.</p>
+            </div>
+
+            <div id="table-data-container" class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 shadow-xl hidden table-container">
+                <table class="w-full text-left text-sm text-zinc-300">
+                    <thead class="text-xs uppercase bg-zinc-800 text-zinc-400 font-mono">
+                        <tr>
+                            <th class="px-4 py-3 rounded-l-lg">Team</th>
+                            <th class="px-3 py-3 text-center">P</th>
+                            <th class="px-3 py-3 text-center">W</th>
+                            <th class="px-3 py-3 text-center">L</th>
+                            <th class="px-3 py-3 text-center text-lime-400">Pts</th>
+                            <th class="px-4 py-3 text-right rounded-r-lg">NRR</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-zinc-800">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+
     </main>
 
     <script>
-        const API_KEY = "21ba7825-b668-4ef9-b5ed-91680688b513";
+        const API_KEY = "21ba7825-b668-4ef9-b5ed-91680688b513"; 
+        const LIVE_API_URL = `https://api.cricapi.com/v1/currentMatches?apikey=${API_KEY}`;
+        const SCHEDULE_API_URL = `https://api.cricapi.com/v1/matches?apikey=${API_KEY}`;
+        const SERIES_API_URL = `https://api.cricapi.com/v1/series?apikey=${API_KEY}&offset=0`;
 
-        const LIVE_API =
-            `https://api.cricapi.com/v1/currentMatches?apikey=${API_KEY}&offset=0`;
+        let scheduleFetched = false;
+        let seriesDropdownLoaded = false;
 
-        const SCHEDULE_API =
-            `https://api.cricapi.com/v1/matches?apikey=${API_KEY}&offset=0`;
+        // 1. Core Navigation Manager System
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.classList.remove('text-lime-500', 'border-lime-500', 'font-bold');
+                btn.classList.add('text-gray-400', 'border-transparent');
+            });
 
-        const IPL_TEAMS = [
-            "chennai super kings", "csk",
-            "mumbai indians", "mi",
-            "royal challengers bengaluru", "royal challengers bangalore", "rcb",
-            "kolkata knight riders", "kkr",
-            "delhi capitals", "dc",
-            "punjab kings", "pbks",
-            "rajasthan royals", "rr",
-            "sunrisers hyderabad", "srh",
-            "gujarat titans", "gt",
-            "lucknow super giants", "lsg"
-        ];
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.remove('text-gray-400', 'border-transparent');
+            activeBtn.classList.add('text-lime-500', 'border-lime-500', 'font-bold');
 
-        const NATIONAL_TEAMS = [
-            "india", "australia", "england", "pakistan", "new zealand",
-            "south africa", "sri lanka", "bangladesh", "afghanistan",
-            "west indies", "ireland", "zimbabwe", "netherlands",
-            "scotland", "nepal", "oman", "uae", "united arab emirates",
-            "usa", "united states", "canada", "namibia",
-            "hong kong", "papua new guinea"
-        ];
-
-        const BLOCKED_DOMESTIC_WORDS = [
-            "county",
-            "blast league",
-            "league two",
-            "sub regional",
-            "regional",
-            "domestic",
-            "academy",
-            "u19",
-            "under 19",
-            "under-19",
-            "u-19",
-            "division",
-            "plate group",
-            "plate final",
-            "ranji",
-            "vijay hazare",
-            "syed mushtaq",
-            "duleep",
-            "duleep",
-            "smat",
-            "cpl",
-            "super smash",
-            "the hundred",
-            "women's t20 blast",
-            "womens t20 blast",
-            "t20 blast",
-            "blast league two",
-            "inter state",
-            "club",
-            "school",
-            "college"
-        ];
-
-        function normalizeText(value) {
-            return (value || "").toString().toLowerCase();
-        }
-
-        function getMatchText(match) {
-            const parts = [
-                match?.name,
-                match?.series,
-                match?.matchType,
-                ...(Array.isArray(match?.teams) ? match.teams : [])
-            ];
-            return normalizeText(parts.filter(Boolean).join(" "));
-        }
-
-        function hasBlockedDomesticWords(text) {
-            return BLOCKED_DOMESTIC_WORDS.some(word => text.includes(word));
-        }
-
-        function isIPLMatch(text) {
-            if (text.includes("ipl") || text.includes("indian premier league")) {
-                return true;
+            if (tabName === 'schedule' && !scheduleFetched) {
+                fetchSchedules();
             }
-            return IPL_TEAMS.some(team => text.includes(team));
-        }
-
-        function countNationalTeamHits(text) {
-            let count = 0;
-            for (const team of NATIONAL_TEAMS) {
-                if (text.includes(team)) {
-                    count += 1;
-                }
-            }
-            return count;
-        }
-
-        function isInternationalMatch(text) {
-            const teamHits = countNationalTeamHits(text);
-
-            const internationalCompetitionWords = [
-                "icc",
-                "world cup",
-                "champions trophy",
-                "asia cup",
-                "t20i",
-                "odi",
-                "test",
-                "tour of",
-                "bilateral",
-                "tri-series",
-                "tri series",
-                "international"
-            ];
-
-            const hasCompetitionWord = internationalCompetitionWords.some(word => text.includes(word));
-
-            return teamHits >= 2 || (teamHits >= 1 && hasCompetitionWord);
-        }
-
-        function isDesiredMatch(match) {
-            if (!match) return false;
-
-            const text = getMatchText(match);
-
-            if (!text) return false;
-
-            if (hasBlockedDomesticWords(text)) return false;
-
-            if (isIPLMatch(text)) return true;
-
-            if (isInternationalMatch(text)) return true;
-
-            return false;
-        }
-
-        function switchTab(tab) {
-            const liveSection = document.getElementById("live-section");
-            const scheduleSection = document.getElementById("schedule-section");
-            const liveTab = document.getElementById("live-tab");
-            const scheduleTab = document.getElementById("schedule-tab");
-
-            liveSection.classList.add("hidden");
-            scheduleSection.classList.add("hidden");
-            liveTab.classList.remove("tab-active");
-            scheduleTab.classList.remove("tab-active");
-
-            if (tab === "live") {
-                liveSection.classList.remove("hidden");
-                liveTab.classList.add("tab-active");
-            } else {
-                scheduleSection.classList.remove("hidden");
-                scheduleTab.classList.add("tab-active");
+            if (tabName === 'tables' && !seriesDropdownLoaded) {
+                populateSeriesDropdown();
             }
         }
 
-        function safeScore(scoreObj) {
-            if (!scoreObj) return "Yet to bat";
-            const runs = scoreObj.r ?? "-";
-            const wickets = scoreObj.w ?? "-";
-            const overs = scoreObj.o ?? "-";
-            return `${runs}/${wickets} (${overs} ov)`;
-        }
-
-        async function loadLiveMatches() {
-            const loading = document.getElementById("live-loading");
-            const container = document.getElementById("live-container");
-            const refresh = document.getElementById("refresh-status");
+        // 2. Cricbuzz Interactive Live Feed Fetcher Engine
+        async function fetchLiveScores() {
+            const statusEl = document.getElementById('status-message');
+            const containerEl = document.getElementById('matches-container');
+            const indicatorEl = document.getElementById('refresh-indicator');
 
             try {
-                refresh.innerText = "Updating...";
-
-                const response = await fetch(LIVE_API);
+                indicatorEl.innerText = "🔄 Syncing live...";
+                const response = await fetch(LIVE_API_URL);
+                if (!response.ok) throw new Error(`HTTP Error Code ${response.status}`);
                 const result = await response.json();
 
-                console.log("LIVE RESULT:", result);
-
-                if (result.status !== "success" || !Array.isArray(result.data)) {
-                    loading.innerHTML = "Failed to load live matches";
+                if (result.status !== "success") {
+                    statusEl.innerHTML = `<p class="text-sm text-red-400 font-mono">API Processing Fault: ${result.reason}</p>`;
                     return;
                 }
 
-                const matches = result.data.filter(isDesiredMatch);
-
-                if (matches.length === 0) {
-                    loading.innerHTML = "No IPL or international matches live right now";
+                if (!result.data || result.data.length === 0) {
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 Server states no international/domestic games are live right now.</p>`;
                     return;
                 }
 
-                container.innerHTML = "";
-                loading.classList.add("hidden");
-                container.classList.remove("hidden");
+                containerEl.innerHTML = '';
+                statusEl.classList.add('hidden');
+                containerEl.classList.remove('hidden');
 
-                matches.forEach(match => {
-                    const team1 = match?.teams?.[0] || "Team 1";
-                    const team2 = match?.teams?.[1] || "Team 2";
-                    const score1 = safeScore(match?.score?.[0]);
-                    const score2 = safeScore(match?.score?.[1]);
+                result.data.forEach(match => {
+                    const card = document.createElement('div');
+                    card.className = "bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg p-5 shadow-md flex flex-col justify-between transition-all";
 
-                    const card = document.createElement("div");
-                    card.className = "match-card";
+                    const score1 = match.score && match.score[0] ? `${match.score[0].r}/${match.score[0].w} <span class="text-xs text-zinc-500 font-normal">(${match.score[0].o} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
+                    const score2 = match.score && match.score[1] ? `${match.score[1].r}/${match.score[1].w} <span class="text-xs text-zinc-500 font-normal">(${match.score[1].o} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
 
                     card.innerHTML = `
-                        <div class="flex justify-between items-center mb-3">
-                            <div class="text-xs uppercase text-zinc-500 font-bold">
-                                ${match.matchType || "Match"}
+                        <div>
+                            <div class="flex justify-between items-center text-[11px] font-bold tracking-wider text-zinc-500 uppercase border-b border-zinc-800 pb-2 mb-3">
+                                <span>${match.matchType || 'International'}</span>
+                                <span class="flex items-center gap-1.5 text-rose-500 bg-rose-950/20 px-2 py-0.5 rounded font-mono text-[10px]">
+                                    <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>LIVE
+                                </span>
                             </div>
-                            <div class="flex items-center gap-2 text-red-500 text-xs font-bold">
-                                <div class="live-dot"></div>
-                                LIVE
-                            </div>
-                        </div>
-
-                        <div class="text-sm text-zinc-400 mb-5 leading-relaxed">
-                            ${match.name || ""}
-                        </div>
-
-                        <div class="space-y-4">
-                            <div class="flex justify-between gap-3">
-                                <div class="font-bold text-white text-base">
-                                    ${team1}
+                            <h2 class="text-xs text-zinc-400 line-clamp-1 mb-4 font-medium">${match.name}</h2>
+                            <div class="space-y-3.5 my-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${match.teams[0]}</span>
+                                    <span class="font-mono text-sm font-bold text-zinc-100">${score1}</span>
                                 </div>
-                                <div class="font-bold text-white text-base text-right">
-                                    ${score1}
-                                </div>
-                            </div>
-
-                            <div class="flex justify-between gap-3">
-                                <div class="font-bold text-white text-base">
-                                    ${team2}
-                                </div>
-                                <div class="font-bold text-white text-base text-right">
-                                    ${score2}
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${match.teams[1]}</span>
+                                    <span class="font-mono text-sm font-bold text-zinc-100">${score2}</span>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="border-t border-zinc-800 mt-5 pt-3 text-sky-400 text-sm">
-                            ${match.status || ""}
+                        <div class="mt-5 pt-3 border-t border-zinc-800/80 text-xs font-semibold text-sky-400 tracking-wide">
+                            👉 ${match.status || 'Match calculations updating...'}
                         </div>
                     `;
-
-                    container.appendChild(card);
+                    containerEl.appendChild(card);
                 });
 
-                refresh.innerText = "Updated";
-            } catch (error) {
-                console.log(error);
-                loading.innerHTML = "Error loading live matches";
-                refresh.innerText = "Error";
+                indicatorEl.innerText = "✅ Updated";
+            } catch (err) {
+                console.error(err);
+                indicatorEl.innerText = "❌ Offline";
+                statusEl.innerHTML = `<p class="text-xs text-red-500">Network connection interruption. Retrying shortly...</p>`;
             }
         }
 
-        async function loadUpcomingMatches() {
-            const loading = document.getElementById("schedule-loading");
-            const container = document.getElementById("schedule-container");
+        // 3. Cricbuzz Schedule Engine Loader
+        async function fetchSchedules() {
+            const statusEl = document.getElementById('schedule-status-message');
+            const containerEl = document.getElementById('schedule-container');
 
             try {
-                const response = await fetch(SCHEDULE_API);
+                const response = await fetch(SCHEDULE_API_URL);
+                if (!response.ok) throw new Error("Could not download fixture list.");
                 const result = await response.json();
 
-                console.log("SCHEDULE RESULT:", result);
-
-                if (result.status !== "success" || !Array.isArray(result.data)) {
-                    loading.innerHTML = "Failed to load upcoming matches";
+                if (result.status !== "success" || !result.data) {
+                    statusEl.innerHTML = `<p class="text-sm text-amber-400">Failed parsing schedules from provider.</p>`;
                     return;
                 }
 
-                const matches = result.data.filter(match => {
-                    const text = getMatchText(match);
-                    return !match?.matchStarted && isDesiredMatch(match) && text;
-                });
+                const upcomingMatches = result.data.filter(match => match.matchStarted === false);
 
-                if (matches.length === 0) {
-                    loading.innerHTML = "No upcoming IPL or international matches";
+                if (upcomingMatches.length === 0) {
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">No scheduled fixtures listed in database right now.</p>`;
                     return;
                 }
 
-                container.innerHTML = "";
-                loading.classList.add("hidden");
-                container.classList.remove("hidden");
+                containerEl.innerHTML = '';
+                statusEl.classList.add('hidden');
+                containerEl.classList.remove('hidden');
 
-                matches.slice(0, 20).forEach(match => {
-                    const card = document.createElement("div");
-                    card.className = "match-card";
-
-                    const dateText = match?.date
-                        ? new Date(match.date).toLocaleString()
-                        : "Date not available";
+                upcomingMatches.slice(0, 20).forEach(match => {
+                    const card = document.createElement('div');
+                    card.className = "bg-zinc-900 border border-zinc-800 rounded-lg p-5 flex flex-col justify-between shadow-sm";
+                    const matchDate = match.date ? new Date(match.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Date TBD';
 
                     card.innerHTML = `
-                        <div class="flex justify-between items-center mb-3">
-                            <div class="text-xs uppercase text-zinc-500 font-bold">
-                                ${match.matchType || "Match"}
+                        <div>
+                            <div class="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-wide border-b border-zinc-800/60 pb-2 mb-3">
+                                <span>${match.matchType || 'Match'}</span>
+                                <span class="text-lime-400 font-mono bg-lime-950/20 px-2 py-0.5 rounded">${matchDate}</span>
                             </div>
-                            <div class="text-lime-400 text-xs font-bold">
-                                UPCOMING
-                            </div>
+                            <h3 class="text-sm font-bold text-zinc-200 mb-1">${match.name}</h3>
+                            <p class="text-xs text-zinc-500 mb-4">${match.venue || 'Venue information not listed yet'}</p>
                         </div>
-
-                        <div class="font-bold text-white text-base mb-3 leading-relaxed">
-                            ${match.name || ""}
-                        </div>
-
-                        <div class="text-zinc-400 text-sm mb-2">
-                            ${dateText}
-                        </div>
-
-                        <div class="text-zinc-500 text-xs">
-                            ${match.venue || ""}
+                        <div class="pt-3 border-t border-zinc-800/50 flex justify-between items-center text-[11px] text-zinc-400 font-medium">
+                            <span>Teams: ${match.teams ? match.teams.join(' vs ') : 'TBD'}</span>
+                            <span class="text-amber-500 font-semibold bg-amber-950/10 px-1.5 py-0.5 rounded border border-amber-900/20">Upcoming</span>
                         </div>
                     `;
-
-                    container.appendChild(card);
+                    containerEl.appendChild(card);
                 });
-            } catch (error) {
-                console.log(error);
-                loading.innerHTML = "Error loading upcoming matches";
+
+                scheduleFetched = true;
+            } catch (err) {
+                console.error(err);
+                statusEl.innerHTML = `<p class="text-xs text-red-400">Error rendering upcoming calendar list.</p>`;
             }
         }
 
-        loadLiveMatches();
-        loadUpcomingMatches();
+        // 4. Cricbuzz Tournament Rankings Engine
+        async function populateSeriesDropdown() {
+            const dropdown = document.getElementById('series-select');
+            try {
+                const response = await fetch(SERIES_API_URL);
+                const result = await response.json();
 
-        setInterval(loadLiveMatches, 30000);
+                if (result.status !== "success" || !result.data) return;
+
+                dropdown.innerHTML = '<option value="" disabled selected>-- Choose an ongoing tournament --</option>';
+                
+                result.data.forEach(series => {
+                    const option = document.createElement('option');
+                    option.value = series.id;
+                    option.innerText = `${series.name} (${series.matches} Matches)`;
+                    dropdown.appendChild(option);
+                });
+
+                seriesDropdownLoaded = true;
+            } catch (err) {
+                console.error("Error populating dropdown:", err);
+            }
+        }
+
+        async function handleSeriesChange() {
+            const seriesId = document.getElementById('series-select').value;
+            const statusEl = document.getElementById('table-status-message');
+            const dataContainerEl = document.getElementById('table-data-container');
+            const tbody = document.getElementById('table-body');
+
+            statusEl.innerHTML = `<p class="text-sm text-zinc-400 animate-pulse">Fetching official series metrics matrix...</p>`;
+            statusEl.classList.remove('hidden');
+            dataContainerEl.classList.add('hidden');
+
+            try {
+                const url = `https://api.cricapi.com/v1/series_points?apikey=${API_KEY}&id=${seriesId}`;
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.status !== "success" || !result.data || result.data.length === 0) {
+                    statusEl.innerHTML = `<p class="text-sm text-amber-400">⚠️ Standing metrics table not initialized yet by provider for this series.</p>`;
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                statusEl.classList.add('hidden');
+                dataContainerEl.classList.remove('hidden');
+
+                result.data.forEach(team => {
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-zinc-800/40 border-b border-zinc-800/50 transition-colors";
+                    row.innerHTML = `
+                        <td class="px-4 py-3.5 font-bold text-zinc-100 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-zinc-700"></span>${team.teamname || 'Team'}
+                        </td>
+                        <td class="px-3 py-3.5 text-center font-medium">${team.matches || 0}</td>
+                        <td class="px-3 py-3.5 text-center text-emerald-500 font-medium">${team.wins || 0}</td>
+                        <td class="px-3 py-3.5 text-center text-rose-500 font-medium">${team.loss || 0}</td>
+                        <td class="px-3 py-3.5 text-center font-bold text-lime-400 font-mono">${team.points || 0}</td>
+                        <td class="px-4 py-3.5 text-right font-mono text-zinc-400 text-xs">${team.netRunRate || '0.000'}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+            } catch (err) {
+                console.error(err);
+                statusEl.innerHTML = `<p class="text-xs text-red-400">Failed generating standing rows due to a connection error.</p>`;
+            }
+        }
+
+        // Initialize background tracking sync
+        fetchLiveScores();
+        setInterval(fetchLiveScores, 30000);
     </script>
 </body>
-</html>
+    </html>
