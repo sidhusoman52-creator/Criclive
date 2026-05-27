@@ -99,6 +99,26 @@
         let scheduleFetched = false;
         let seriesDropdownLoaded = false;
 
+        // Smart Filtering Logic to separate International/IPL/Women's matches from low-tier domestic matches
+        function isTargetMatch(match) {
+            const matchName = (match.name || "").toLowerCase();
+            const matchType = (match.matchType || "").toLowerCase();
+            const seriesName = (match.series || "").toLowerCase();
+
+            // Explicit filters for high-tier profile targets
+            const targets = ["ipl", "indian premier league", "wpl", "women", "odi", "t20i", "test match", "international"];
+            
+            // Sub-regional qualifiers or tiny domestic systems to actively skip
+            const exclusions = ["sub regional", "sub-regional", "division", "domestic", "trophy", "shield"];
+
+            // Check if any exclusion keywords are in the match context
+            const containsExclusion = exclusions.some(term => matchName.includes(term) || seriesName.includes(term));
+            if (containsExclusion) return false;
+
+            // Check if match belongs to target tier groupings
+            return targets.some(term => matchName.includes(term) || matchType.includes(term) || seriesName.includes(term));
+        }
+
         // 1. Core Navigation Manager System
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -138,7 +158,18 @@
                 }
 
                 if (!result.data || result.data.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 Server states no international/domestic games are live right now.</p>`;
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 Server states no games are live right now.</p>`;
+                    return;
+                }
+
+                // Apply custom target match filter
+                const filteredLiveMatches = result.data.filter(isTargetMatch);
+
+                if (filteredLiveMatches.length === 0) {
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No International, Women's International, or IPL games are live right now.</p>`;
+                    statusEl.classList.remove('hidden');
+                    containerEl.classList.add('hidden');
+                    indicatorEl.innerText = "✅ Updated";
                     return;
                 }
 
@@ -146,7 +177,7 @@
                 statusEl.classList.add('hidden');
                 containerEl.classList.remove('hidden');
 
-                result.data.forEach(match => {
+                filteredLiveMatches.forEach(match => {
                     const card = document.createElement('div');
                     card.className = "bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg p-5 shadow-md flex flex-col justify-between transition-all";
 
@@ -203,10 +234,13 @@
                     return;
                 }
 
-                const upcomingMatches = result.data.filter(match => match.matchStarted === false);
+                // Filter for upcoming games that match our target criteria
+                const upcomingMatches = result.data.filter(match => match.matchStarted === false && isTargetMatch(match));
 
                 if (upcomingMatches.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">No scheduled fixtures listed in database right now.</p>`;
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">No matching upcoming International or IPL fixtures found.</p>`;
+                    statusEl.classList.remove('hidden');
+                    containerEl.classList.add('hidden');
                     return;
                 }
 
@@ -318,4 +352,4 @@
         setInterval(fetchLiveScores, 30000);
     </script>
 </body>
-    </html>
+</html>
