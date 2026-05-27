@@ -3,220 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cricbuzz Clone - Instant Live Tracker</title>
+    <title>Cricbuzz Clone - RapidAPI Realtime Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @keyframes pulse { 
-            0%, 100% { opacity: 1; } 
-            50% { opacity: .4; } 
-        }
-        .animate-pulse-dot { 
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; 
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+        .animate-pulse-dot { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
 </head>
 <body class="bg-[#121212] text-gray-200 font-sans antialiased">
 
-    <div id="dashboard-view" class="block">
-        <header class="bg-[#004d40] p-4 flex items-center justify-between shadow-md">
-            <div class="flex items-center space-x-3">
-                <span class="text-xl font-bold tracking-tight text-white">Cricbuzz Clone</span>
-                <span class="bg-[#1b5e20] text-[#81c784] text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide">NO API KEY REQ</span>
-            </div>
-            <div class="flex items-center space-x-1 text-xs font-medium bg-[#1e1e1e]/40 px-2 py-1 rounded" id="sync-container">
-                <span id="sync-status" class="text-[#81c784]">Live Connected</span>
-            </div>
-        </header>
+    <header class="bg-[#004d40] p-4 flex items-center justify-between shadow-md">
+        <div class="flex items-center space-x-3">
+            <span class="text-xl font-bold tracking-tight text-white">Cricbuzz Clone</span>
+            <span class="bg-[#1b5e20] text-[#81c784] text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide">RAPIDAPI LIVE</span>
+        </div>
+        <div class="flex items-center space-x-1 text-xs font-medium bg-[#1e1e1e]/40 px-2 py-1 rounded">
+            <span id="sync-status" class="text-[#81c784]">✓ Connected</span>
+        </div>
+    </header>
 
-        <nav class="bg-[#1e1e1e] border-b border-gray-800 flex text-xs md:text-sm font-semibold tracking-wide">
-            <button class="flex-1 py-3 text-center border-b-2 border-[#81c784] text-[#81c784]">Live Matches</button>
-            <button class="flex-1 py-3 text-center text-gray-400 hover:text-gray-200">Schedules</button>
-            <button class="flex-1 py-3 text-center text-gray-400 hover:text-gray-200">Points Table</button>
-        </nav>
-
-        <main class="max-w-xl mx-auto p-4 space-y-4">
-            <h2 class="text-xs font-bold text-gray-400 tracking-wider uppercase pl-1">Active Live Matches</h2>
+    <main class="max-w-xl mx-auto p-4 space-y-4">
+        
+        <div class="bg-[#1e1e1e] rounded-xl p-5 border border-gray-800 shadow-sm">
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-[10px] font-bold uppercase tracking-wider bg-red-900/40 text-red-400 px-2 py-0.5 rounded flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-dot"></span> LIVE MATCH INNINGS 2
+                </span>
+                <span class="text-xs text-zinc-500 font-mono" id="live-over-counter">Overs: 0.0</span>
+            </div>
             
-            <div id="live-match-list-container" class="space-y-4">
-                <div class="p-8 text-center text-zinc-500 text-sm">Fetching real-time matches from Cricbuzz feed...</div>
-            </div>
-        </main>
-    </div>
-
-    <div id="live-match-view" class="hidden">
-        <div class="bg-[#004d40] p-4 flex items-center shadow-md sticky top-0 z-10">
-            <button onclick="closeLiveMatchView()" class="mr-4 text-white text-2xl font-bold leading-none hover:text-gray-300">&larr;</button>
-            <div class="min-w-0 flex-1">
-                <h1 class="text-white font-bold text-sm md:text-base truncate" id="live-header-title">Match Detail</h1>
-                <p class="text-[11px] text-zinc-300 truncate" id="live-header-subtitle">Live Updates</p>
-            </div>
-        </div>
-
-        <div class="bg-[#1e1e1e] border-b border-gray-800 flex text-xs font-semibold tracking-wider sticky top-[64px] z-10">
-            <button class="flex-1 py-3 text-center border-b-2 border-[#81c784] text-[#81c784]">LIVE</button>
-            <button class="flex-1 py-3 text-center text-gray-400">SCORECARD</button>
-            <button class="flex-1 py-3 text-center text-gray-400">COMMENTARY</button>
-        </div>
-
-        <div class="max-w-xl mx-auto p-4 space-y-4">
-            <div class="bg-[#1e1e1e] rounded-xl p-4 border border-gray-800 shadow-sm">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-[10px] font-bold uppercase tracking-wider bg-red-900/40 text-red-400 px-2 py-0.5 rounded flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-dot"></span> LIVE
-                    </span>
-                    <span class="text-[10px] text-gray-400 font-bold tracking-wider" id="live-match-format">MATCH</span>
+            <div class="flex justify-between items-baseline my-4">
+                <div>
+                    <h2 class="text-xl font-extrabold text-white tracking-tight" id="live-batting-team">Chasing Team</h2>
+                    <p class="text-[11px] text-[#29b6f6] font-medium mt-1" id="live-status-note">Fetching real-time target status...</p>
                 </div>
-                
-                <div class="flex justify-between items-baseline my-3">
-                    <div class="pr-2 min-w-0">
-                        <h2 class="text-lg font-bold text-white truncate" id="live-team-batting">Loading side...</h2>
-                        <p class="text-[11px] text-gray-400 mt-0.5" id="live-match-type">Innings Status</p>
-                    </div>
-                    <div class="text-right flex-shrink-0">
-                        <div class="text-2xl font-extrabold text-white tracking-tight" id="live-main-score">0/0</div>
-                        <div class="text-xs text-gray-400" id="live-main-overs">(0.0 Ov)</div>
-                    </div>
-                </div>
-                
-                <div class="text-xs text-[#81c784] font-medium pt-2 border-t border-gray-800/60" id="live-status-note">
-                    Syncing ball status...
-                </div>
-            </div>
-
-            <div class="bg-[#1e1e1e] rounded-xl p-4 border border-gray-800 shadow-sm">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Current Situation</h3>
-                <div id="live-situation-box" class="text-sm text-zinc-300 bg-zinc-900/40 p-3 rounded-lg border border-zinc-800/50">
-                    Waiting for the next ball to be bowled...
+                <div class="text-right">
+                    <div class="text-3xl font-black text-white tracking-tight" id="live-main-score">0/0</div>
+                    <p class="text-xs text-zinc-400 mt-1" id="live-crr">CRR: 0.00</p>
                 </div>
             </div>
         </div>
-    </div>
+
+        <div class="bg-[#1e1e1e] rounded-xl p-4 border border-gray-800 shadow-sm">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Live Ball-By-Ball Feed</h3>
+            <div id="commentary-feed-box" class="space-y-3 max-h-[400px] overflow-y-auto pr-1 divide-y divide-gray-800/60">
+                <div class="p-4 text-center text-zinc-500 text-sm">Waiting for live data packet stream...</div>
+            </div>
+        </div>
+    </main>
 
     <script>
-        // Utilizing a high-availability proxy wrapper to eliminate any local CORS or endpoint freezing errors
-        const BASE_URL = "https://cricbuzz-api.vercel.app/matches/live";
-        const PROXY_URL = "https://api.allorigins.win/raw?url="; 
-        const API_URL = PROXY_URL + encodeURIComponent(BASE_URL);
+        // Mapping configurations straight from your curl command
+        const CONFIG = {
+            url: "https://cricket-live-line-advance.p.rapidapi.com/matches/87014/innings/2/commentary",
+            headers: {
+                "x-rapidapi-host": "cricket-live-line-advance.p.rapidapi.com",
+                "x-rapidapi-key": "5c86953d66mshe0d3e06701aa1ddp14c43djsn3eac42f75725",
+                "Content-Type": "application/json"
+            },
+            intervalMs: 8000 // Refreshes automatically every 8 seconds
+        };
 
-        let activeMatchId = null;
-        let updateLoopInterval = null;
-
-        // Fetch all live matches and render them on dashboard
-        async function fetchDashboardMatches() {
+        async function syncRapidApiBallByBall() {
             try {
-                // If the user has opened a specific match view, don't re-render the list layout background
-                if (activeMatchId) return;
+                const response = await fetch(CONFIG.url, {
+                    method: "GET",
+                    headers: CONFIG.headers
+                });
 
-                const syncBadge = document.getElementById('sync-status');
-                syncBadge.innerText = "Syncing...";
-                syncBadge.className = "text-amber-400";
+                if (!response.ok) throw new Error("RapidAPI credit or server error");
+                const payload = await response.json();
                 
-                const response = await fetch(API_URL);
-                if (!response.ok) throw new Error("CORS server block detected");
-                
-                const data = await response.json();
-                
-                if (!data || data.length === 0) {
-                    document.getElementById('live-match-list-container').innerHTML = `
-                        <div class="p-8 text-center text-zinc-500 text-sm border border-dashed border-zinc-800 rounded-xl">
-                            No active live matches right now. Check back when live play starts!
+                // Read the commentary array from the response data structure
+                // Adjust 'payload.data' or 'payload.response' if your specific API uses a wrapper object
+                const commentaryList = payload.data || payload.commentary || payload;
+
+                if (!Array.isArray(commentaryList) || commentaryList.length === 0) {
+                    document.getElementById('commentary-feed-box').innerHTML = `
+                        <div class="text-center py-4 text-zinc-500 text-xs">
+                            Match active. Awaiting first ball data packet...
                         </div>`;
-                    syncBadge.innerText = "Live Connected";
-                    syncBadge.className = "text-[#81c784]";
                     return;
                 }
 
-                let htmlContent = "";
-                data.forEach(match => {
-                    // Safe verification fallback variables if optional team arrays are missing data
-                    const t1Name = match.teams?.team1?.name || "Team 1";
-                    const t1Score = match.teams?.team1?.score || "Yet to bat";
-                    const t2Name = match.teams?.team2?.name || "Team 2";
-                    const t2Score = match.teams?.team2?.score || "Yet to bat";
-                    const matchTitle = match.title || `${t1Name} vs ${t2Name}`;
+                // 1. Grab the absolute newest ball bowled (the first item in the live array)
+                const latestBall = commentaryList[0];
+
+                // 2. Extract metrics dynamically from the packet
+                // Note: If your API uses slightly different keys (like 'runs', 'score_runs', 'over_no'), change them here:
+                const liveScore  = latestBall.score || latestBall.total_runs || "0/0"; 
+                const liveOvers  = latestBall.over || latestBall.over_number || "0.0";
+                const teamName   = latestBall.team_name || latestBall.batting_team || "Innings 2";
+                const currentCrr = latestBall.crr || latestBall.run_rate || "0.00";
+                const statusNote = latestBall.status || latestBall.match_commentary || "Play in progress";
+
+                // 3. Render directly onto the screen elements
+                document.getElementById('live-main-score').innerText = liveScore;
+                document.getElementById('live-over-counter').innerText = `Overs: ${liveOvers}`;
+                document.getElementById('live-batting-team').innerText = teamName;
+                document.getElementById('live-crr').innerText = `CRR: ${currentCrr}`;
+                document.getElementById('live-status-note').innerText = `👉 ${statusNote}`;
+
+                // 4. Generate the beautiful bottom rolling log list of historical balls
+                let feedHtml = "";
+                commentaryList.slice(0, 15).forEach(ball => {
+                    const overNum = ball.over || "0.0";
+                    const ballRuns = ball.runs !== undefined ? ball.runs : "•";
+                    const ballText = ball.commentary || ball.text || "Delivery completed.";
                     
-                    htmlContent += `
-                        <div onclick="startLiveTracking('${match.id}')" class="bg-[#1e1e1e] rounded-xl p-4 border border-gray-800 shadow-sm hover:border-zinc-700 transition cursor-pointer active:scale-[0.99]">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">${match.matchType || 'MATCH'}</span>
-                                <span class="text-[10px] font-bold uppercase tracking-wider bg-red-900/30 text-red-400 px-2 py-0.5 rounded flex items-center gap-1">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-dot"></span> LIVE
-                                </span>
+                    // Style specific events like boundaries or wickets uniquely
+                    let badgeColor = "bg-zinc-800 text-zinc-300";
+                    if (ballRuns == "4" || ballRuns == "6") badgeColor = "bg-green-950 text-green-400 font-bold border border-green-800/50";
+                    if (String(ballRuns).toLowerCase().includes('w') || ball.is_wicket) badgeColor = "bg-red-950 text-red-400 font-bold border border-red-800/50";
+
+                    feedHtml += `
+                        <div class="flex items-start space-x-3 pt-3 first:pt-0">
+                            <div class="flex-shrink-0 text-xs font-mono font-bold text-zinc-500 w-10 pt-1">
+                                Ov ${overNum}
                             </div>
-                            <h3 class="text-xs font-semibold text-zinc-300 mb-3 line-clamp-1">${matchTitle}</h3>
-                            <div class="space-y-1 text-sm">
-                                <div class="flex justify-between"><span class="font-bold text-white">${t1Name}</span><span class="font-extrabold text-white">${t1Score}</span></div>
-                                <div class="flex justify-between"><span class="font-bold text-zinc-400">${t2Name}</span><span class="font-bold text-zinc-400">${t2Score}</span></div>
+                            <div class="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs ${badgeColor}">
+                                ${ballRuns}
                             </div>
-                            <div class="text-xs text-[#29b6f6] font-medium pt-2 mt-3 border-t border-gray-800/60 truncate">
-                                👉 ${match.status || 'Click to view real-time card'}
+                            <div class="text-xs md:text-sm text-zinc-300 flex-1 leading-relaxed">
+                                ${ballText}
                             </div>
                         </div>
                     `;
                 });
 
-                document.getElementById('live-match-list-container').innerHTML = htmlContent;
-                syncBadge.innerText = "Live Connected";
-                syncBadge.className = "text-[#81c784]";
+                document.getElementById('commentary-feed-box').innerHTML = feedHtml;
+                
+                // Update header status verification
+                document.getElementById('sync-status').innerText = "✓ Live Synced";
+                document.getElementById('sync-status').className = "text-[#81c784]";
+
             } catch (err) {
-                console.error("Dashboard engine network error:", err);
-                const syncBadge = document.getElementById('sync-status');
-                syncBadge.innerText = "Offline Retry";
-                syncBadge.className = "text-red-400";
+                console.error("RapidAPI Stream Error:", err);
+                document.getElementById('sync-status').innerText = "Sync Alert";
+                document.getElementById('sync-status').className = "text-red-400";
             }
         }
 
-        // Fetch metrics for a single match ball-by-ball
-        async function fetchSingleMatchDetails() {
-            if (!activeMatchId) return;
-            try {
-                const targetSingleUrl = `${PROXY_URL}${encodeURIComponent(BASE_URL + '/' + activeMatchId)}`;
-                const response = await fetch(targetSingleUrl);
-                const match = await response.json();
-
-                // Map target layout fields safely
-                document.getElementById('live-header-title').innerText = match.title || "Live Match Summary";
-                document.getElementById('live-header-subtitle').innerText = match.status || "In Progress";
-                document.getElementById('live-match-format').innerText = match.matchType || "LIVE";
-                
-                document.getElementById('live-team-batting').innerText = match.teams?.team1?.name || "Batting Side";
-                document.getElementById('live-main-score').innerText = match.teams?.team1?.score || "0/0";
-                document.getElementById('live-main-overs').innerText = match.teams?.team1?.overs ? `(${match.teams.team1.overs} Ov)` : "(0.0 Ov)";
-                document.getElementById('live-status-note').innerText = `👉 ${match.status || 'Match active'}`;
-                
-                // Inject structural over histories if provided by Cricbuzz backend parsing
-                if (match.lastBalls) {
-                    document.getElementById('live-situation-box').innerText = `Recent Deliveries: ${match.lastBalls}`;
-                } else {
-                    document.getElementById('live-situation-box').innerText = "Live play updates will appear on the next ball delivery.";
-                }
-            } catch (err) {
-                console.warn("Detailed scorecard tracking loop lag:", err);
-            }
-        }
-
-        function startLiveTracking(matchId) {
-            activeMatchId = matchId;
-            // Transition interface views seamlessly
-            document.getElementById('dashboard-view').classList.replace('block', 'hidden');
-            document.getElementById('live-match-view').classList.replace('hidden', 'block');
-            
-            // Execute card layout processing immediately upon transition, then poll every 10 seconds
-            fetchSingleMatchDetails();
-            updateLoopInterval = setInterval(fetchSingleMatchDetails, 10000);
-        }
-
-        function closeLiveMatchView() {
-            clearInterval(updateLoopInterval);
-            activeMatchId = null;
-            document.getElementById('live-match-view').classList.replace('block', 'hidden');
-            document.getElementById('dashboard-view').classList.replace('hidden', 'block');
-            fetchDashboardMatches();
-        }
-
-        // Initialize dashboard processing loops
-        fetchDashboardMatches();
-        setInterval(fetchDashboardMatches, 20000); // Check for newly added or finished matches every 20 seconds
+        // Boot and start the recurring execution tracker loop
+        syncRapidApiBallByBall();
+        setInterval(syncRapidApiBallByBall, CONFIG.intervalMs);
     </script>
 </body>
 </html>
