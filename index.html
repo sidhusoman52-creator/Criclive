@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cricbuzz Clone</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .cricbuzz-dark { background-color: #1a1a1a; }
         .cb-nav { background-color: #004f3f; } /* Classic Cricbuzz Green */
@@ -48,7 +48,7 @@
                 <p class="text-sm text-zinc-400 animate-pulse">Connecting to live Cricbuzz server stream...</p>
             </div>
             <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-                </div>
+            </div>
         </section>
 
         <section id="content-schedule" class="tab-content hidden">
@@ -56,14 +56,14 @@
                 <p class="text-sm text-zinc-400 animate-pulse">Loading upcoming cricket calendar...</p>
             </div>
             <div id="schedule-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-                </div>
+            </div>
         </section>
 
         <section id="content-tables" class="tab-content hidden">
             <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl mb-6">
                 <label for="series-select" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">Select Tournament / Series</label>
                 <select id="series-select" onchange="handleSeriesChange()" class="w-full md:w-80 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg p-2.5 text-sm focus:outline-none focus:border-lime-500">
-                    </select>
+                </select>
             </div>
 
             <div id="table-status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
@@ -83,7 +83,7 @@
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-zinc-800">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </section>
@@ -99,14 +99,15 @@
         let scheduleFetched = false;
         let seriesDropdownLoaded = false;
 
-        // Filter function to ensure only International and IPL matches remain
+        // Filter function for International and IPL matches
         function isInternationalOrIPL(match) {
             const type = (match.matchType || "").toLowerCase();
             const name = (match.name || "").toLowerCase();
             const seriesName = (match.series || "").toLowerCase();
 
-            // Checks for International types or IPL mentions
-            const isInternational = type === "t20i" || type === "odi" || type === "test";
+            const isInternational = type === "t20i" || type === "odi" || type === "test" || 
+                                    name.includes("icc") || seriesName.includes("icc");
+            
             const isIPL = name.includes("ipl") || name.includes("indian premier league") || 
                           seriesName.includes("ipl") || seriesName.includes("indian premier league");
 
@@ -126,10 +127,12 @@
             activeBtn.classList.remove('text-gray-400', 'border-transparent');
             activeBtn.classList.add('text-lime-500', 'border-lime-500', 'font-bold');
 
-            if (tabName === 'schedule' && !scheduleFetched) {
+            // Trigger data fetches based on the active tab
+            if (tabName === 'live') {
+                fetchLiveScores();
+            } else if (tabName === 'schedule' && !scheduleFetched) {
                 fetchSchedules();
-            }
-            if (tabName === 'tables' && !seriesDropdownLoaded) {
+            } else if (tabName === 'tables' && !seriesDropdownLoaded) {
                 populateSeriesDropdown();
             }
         }
@@ -158,6 +161,7 @@
                     statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No international or IPL games are live right now.</p>`;
                     statusEl.classList.remove('hidden');
                     containerEl.classList.add('hidden');
+                    indicatorEl.innerText = "✅ Updated";
                     return;
                 }
 
@@ -172,7 +176,6 @@
                     const score1 = match.score && match.score[0] ? `${match.score[0].r}/${match.score[0].w} <span class="text-xs text-zinc-500 font-normal">(${match.score[0].o} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
                     const score2 = match.score && match.score[1] ? `${match.score[1].r}/${match.score[1].w} <span class="text-xs text-zinc-500 font-normal">(${match.score[1].o} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
 
-                    // Simple clean labeling display logic
                     let displayType = "International";
                     if ((match.name || "").toLowerCase().includes("ipl") || (match.name || "").toLowerCase().includes("indian premier league")) {
                         displayType = "IPL";
@@ -292,7 +295,6 @@
                 dropdown.innerHTML = '<option value="" disabled selected>-- Choose an ongoing tournament --</option>';
                 
                 result.data.forEach(series => {
-                    // Optional: Filter the dropdown tournaments list if desired
                     const name = series.name.toLowerCase();
                     const isIPL = name.includes("ipl") || name.includes("indian premier league");
                     const isInternational = name.includes("tour of") || name.includes("icc") || name.includes("trophy") || name.includes("cup") || name.includes("series");
@@ -353,4 +355,4 @@
 
             } catch (err) {
                 console.error(err);
-                statusEl.innerHTML = `<
+     
