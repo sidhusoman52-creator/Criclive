@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cricbuzz Clone</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         .cricbuzz-dark { background-color: #1a1a1a; }
         .cb-nav { background-color: #004f3f; } /* Classic Cricbuzz Green */
@@ -48,7 +48,7 @@
                 <p class="text-sm text-zinc-400 animate-pulse">Connecting to live Cricbuzz server stream...</p>
             </div>
             <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-            </div>
+                </div>
         </section>
 
         <section id="content-schedule" class="tab-content hidden">
@@ -56,14 +56,14 @@
                 <p class="text-sm text-zinc-400 animate-pulse">Loading upcoming cricket calendar...</p>
             </div>
             <div id="schedule-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-            </div>
+                </div>
         </section>
 
         <section id="content-tables" class="tab-content hidden">
             <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl mb-6">
                 <label for="series-select" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">Select Tournament / Series</label>
                 <select id="series-select" onchange="handleSeriesChange()" class="w-full md:w-80 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg p-2.5 text-sm focus:outline-none focus:border-lime-500">
-                </select>
+                    </select>
             </div>
 
             <div id="table-status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
@@ -83,7 +83,7 @@
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-zinc-800">
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </section>
@@ -99,21 +99,6 @@
         let scheduleFetched = false;
         let seriesDropdownLoaded = false;
 
-        // Filter function for International and IPL matches
-        function isInternationalOrIPL(match) {
-            const type = (match.matchType || "").toLowerCase();
-            const name = (match.name || "").toLowerCase();
-            const seriesName = (match.series || "").toLowerCase();
-
-            const isInternational = type === "t20i" || type === "odi" || type === "test" || 
-                                    name.includes("icc") || seriesName.includes("icc");
-            
-            const isIPL = name.includes("ipl") || name.includes("indian premier league") || 
-                          seriesName.includes("ipl") || seriesName.includes("indian premier league");
-
-            return isInternational || isIPL;
-        }
-
         // 1. Core Navigation Manager System
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -127,12 +112,10 @@
             activeBtn.classList.remove('text-gray-400', 'border-transparent');
             activeBtn.classList.add('text-lime-500', 'border-lime-500', 'font-bold');
 
-            // Trigger data fetches based on the active tab
-            if (tabName === 'live') {
-                fetchLiveScores();
-            } else if (tabName === 'schedule' && !scheduleFetched) {
+            if (tabName === 'schedule' && !scheduleFetched) {
                 fetchSchedules();
-            } else if (tabName === 'tables' && !seriesDropdownLoaded) {
+            }
+            if (tabName === 'tables' && !seriesDropdownLoaded) {
                 populateSeriesDropdown();
             }
         }
@@ -154,14 +137,8 @@
                     return;
                 }
 
-                // Filter live fixtures down to International/IPL only
-                const filteredLiveMatches = (result.data || []).filter(isInternationalOrIPL);
-
-                if (filteredLiveMatches.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No international or IPL games are live right now.</p>`;
-                    statusEl.classList.remove('hidden');
-                    containerEl.classList.add('hidden');
-                    indicatorEl.innerText = "✅ Updated";
+                if (!result.data || result.data.length === 0) {
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 Server states no international/domestic games are live right now.</p>`;
                     return;
                 }
 
@@ -169,24 +146,17 @@
                 statusEl.classList.add('hidden');
                 containerEl.classList.remove('hidden');
 
-                filteredLiveMatches.forEach(match => {
+                result.data.forEach(match => {
                     const card = document.createElement('div');
                     card.className = "bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg p-5 shadow-md flex flex-col justify-between transition-all";
 
                     const score1 = match.score && match.score[0] ? `${match.score[0].r}/${match.score[0].w} <span class="text-xs text-zinc-500 font-normal">(${match.score[0].o} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
                     const score2 = match.score && match.score[1] ? `${match.score[1].r}/${match.score[1].w} <span class="text-xs text-zinc-500 font-normal">(${match.score[1].o} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
 
-                    let displayType = "International";
-                    if ((match.name || "").toLowerCase().includes("ipl") || (match.name || "").toLowerCase().includes("indian premier league")) {
-                        displayType = "IPL";
-                    } else if (match.matchType) {
-                        displayType = match.matchType.toUpperCase();
-                    }
-
                     card.innerHTML = `
                         <div>
                             <div class="flex justify-between items-center text-[11px] font-bold tracking-wider text-zinc-500 uppercase border-b border-zinc-800 pb-2 mb-3">
-                                <span>${displayType}</span>
+                                <span>${match.matchType || 'International'}</span>
                                 <span class="flex items-center gap-1.5 text-rose-500 bg-rose-950/20 px-2 py-0.5 rounded font-mono text-[10px]">
                                     <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>LIVE
                                 </span>
@@ -233,13 +203,10 @@
                     return;
                 }
 
-                // Filter down schedules to future International/IPL matches only
-                const upcomingMatches = result.data.filter(match => match.matchStarted === false && isInternationalOrIPL(match));
+                const upcomingMatches = result.data.filter(match => match.matchStarted === false);
 
                 if (upcomingMatches.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">No scheduled international or IPL fixtures listed right now.</p>`;
-                    statusEl.classList.remove('hidden');
-                    containerEl.classList.add('hidden');
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">No scheduled fixtures listed in database right now.</p>`;
                     return;
                 }
 
@@ -252,17 +219,10 @@
                     card.className = "bg-zinc-900 border border-zinc-800 rounded-lg p-5 flex flex-col justify-between shadow-sm";
                     const matchDate = match.date ? new Date(match.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Date TBD';
 
-                    let displayType = "MATCH";
-                    if ((match.name || "").toLowerCase().includes("ipl") || (match.name || "").toLowerCase().includes("indian premier league")) {
-                        displayType = "IPL";
-                    } else if (match.matchType) {
-                        displayType = match.matchType.toUpperCase();
-                    }
-
                     card.innerHTML = `
                         <div>
                             <div class="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-wide border-b border-zinc-800/60 pb-2 mb-3">
-                                <span>${displayType}</span>
+                                <span>${match.matchType || 'Match'}</span>
                                 <span class="text-lime-400 font-mono bg-lime-950/20 px-2 py-0.5 rounded">${matchDate}</span>
                             </div>
                             <h3 class="text-sm font-bold text-zinc-200 mb-1">${match.name}</h3>
@@ -295,16 +255,10 @@
                 dropdown.innerHTML = '<option value="" disabled selected>-- Choose an ongoing tournament --</option>';
                 
                 result.data.forEach(series => {
-                    const name = series.name.toLowerCase();
-                    const isIPL = name.includes("ipl") || name.includes("indian premier league");
-                    const isInternational = name.includes("tour of") || name.includes("icc") || name.includes("trophy") || name.includes("cup") || name.includes("series");
-                    
-                    if (isIPL || isInternational) {
-                        const option = document.createElement('option');
-                        option.value = series.id;
-                        option.innerText = `${series.name} (${series.matches} Matches)`;
-                        dropdown.appendChild(option);
-                    }
+                    const option = document.createElement('option');
+                    option.value = series.id;
+                    option.innerText = `${series.name} (${series.matches} Matches)`;
+                    dropdown.appendChild(option);
                 });
 
                 seriesDropdownLoaded = true;
@@ -355,4 +309,13 @@
 
             } catch (err) {
                 console.error(err);
-     
+                statusEl.innerHTML = `<p class="text-xs text-red-400">Failed generating standing rows due to a connection error.</p>`;
+            }
+        }
+
+        // Initialize background tracking sync
+        fetchLiveScores();
+        setInterval(fetchLiveScores, 30000);
+    </script>
+</body>
+</html>
