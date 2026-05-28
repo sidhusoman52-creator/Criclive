@@ -38,98 +38,27 @@
     </nav>
 
     <main class="max-w-5xl mx-auto px-4 py-6">
+        
         <section id="content-live" class="tab-content">
             <div id="status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
                 <p class="text-sm text-zinc-400 animate-pulse">Connecting to RapidAPI Cricbuzz stream...</p>
             </div>
-            <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden"></div>
+            <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+            </div>
         </section>
 
         <section id="content-schedule" class="tab-content hidden">
             <div id="schedule-status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
                 <p class="text-sm text-zinc-400 animate-pulse">Loading upcoming cricket calendar...</p>
             </div>
-            <div id="schedule-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden"></div>
+            <div id="schedule-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+            </div>
         </section>
+
     </main>
 
-    <div id="match-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-end hidden transition-opacity duration-300">
-        <div class="w-full max-w-2xl bg-zinc-900 h-full flex flex-col shadow-2xl border-l border-zinc-800 animate-slide-in">
-            <div class="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950">
-                <div>
-                    <h2 id="modal-match-title" class="text-sm font-bold text-zinc-100 truncate">Match Scorecard</h2>
-                    <p id="modal-match-subtitle" class="text-xs text-lime-400 font-medium mt-0.5">Live Commentary Feed</p>
-                </div>
-                <button onclick="closeMatchModal()" class="text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 p-2 rounded-full transition-all">
-                    ✕
-                </button>
-            </div>
-
-            <div class="flex-1 overflow-y-auto p-4 space-y-6" id="modal-scroll-body">
-                <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
-                    <div class="flex justify-between text-sm font-bold">
-                        <span id="modal-team1-name" class="text-zinc-300">---</span>
-                        <span id="modal-team1-score" class="font-mono text-zinc-100">---</span>
-                    </div>
-                    <div class="flex justify-between text-sm font-bold">
-                        <span id="modal-team2-name" class="text-zinc-300">---</span>
-                        <span id="modal-team2-score" class="font-mono text-zinc-100">---</span>
-                    </div>
-                    <div id="modal-match-status" class="text-xs text-sky-400 font-semibold pt-1 border-t border-zinc-800/60 mt-2">
-                        ---
-                    </div>
-                </div>
-
-                <div>
-                    <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Batter Performance</h3>
-                    <div class="bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden text-xs">
-                        <table class="w-full text-left">
-                            <thead class="bg-zinc-900 text-zinc-400 font-mono text-[11px]">
-                                <tr>
-                                    <th class="p-3">Batter</th>
-                                    <th class="p-3 text-center">R</th>
-                                    <th class="p-3 text-center">B</th>
-                                    <th class="p-3 text-center">4s</th>
-                                    <th class="p-3 text-center">6s</th>
-                                    <th class="p-3 text-right">SR</th>
-                                </tr>
-                            </thead>
-                            <tbody id="modal-batsmen-body" class="divide-y divide-zinc-800/50 text-zinc-200">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Bowler Performance</h3>
-                    <div class="bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden text-xs">
-                        <table class="w-full text-left">
-                            <thead class="bg-zinc-900 text-zinc-400 font-mono text-[11px]">
-                                <tr>
-                                    <th class="p-3">Bowler</th>
-                                    <th class="p-3 text-center">O</th>
-                                    <th class="p-3 text-center">M</th>
-                                    <th class="p-3 text-center">R</th>
-                                    <th class="p-3 text-center">W</th>
-                                    <th class="p-3 text-right">ECO</th>
-                                </tr>
-                            </thead>
-                            <tbody id="modal-bowlers-body" class="divide-y divide-zinc-800/50 text-zinc-200">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">Live Ball-by-Ball Commentary</h3>
-                    <div id="modal-commentary-timeline" class="space-y-3">
-                        </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
+        // RapidAPI Authorization Configuration
         const RAPIDAPI_KEY = "5c86953d66mshe0d3e06701aa1ddp14c43djsn3eac42f75725";
         const RAPIDAPI_HOST = "cricbuzz-cricket.p.rapidapi.com";
 
@@ -139,12 +68,11 @@
             "x-rapidapi-key": RAPIDAPI_KEY
         };
 
+        // Standard dynamic endpoints derived from the same rapid API host
         const LIVE_MATCHES_URL = "https://cricbuzz-cricket.p.rapidapi.com/matches/v1/live";
         const UPCOMING_MATCHES_URL = "https://cricbuzz-cricket.p.rapidapi.com/matches/v1/recent";
 
         let scheduleFetched = false;
-        let activeMatchId = null;
-        let modalRefreshInterval = null;
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -163,6 +91,7 @@
             }
         }
 
+        // 1. Live Feed Fetcher using your RapidAPI Key
         async function fetchLiveScores() {
             const statusEl = document.getElementById('status-message');
             const containerEl = document.getElementById('matches-container');
@@ -171,9 +100,11 @@
             try {
                 indicatorEl.innerText = "🔄 Syncing live...";
                 const response = await fetch(LIVE_MATCHES_URL, { method: "GET", headers: HEADERS });
+                
                 if (!response.ok) throw new Error(`HTTP Error Code ${response.status}`);
                 const result = await response.json();
 
+                // Check for matches array inside rapidapi cricbuzz layout structural type
                 if (!result.typeMatches || result.typeMatches.length === 0) {
                     statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No international or domestic games are live right now.</p>`;
                     return;
@@ -183,8 +114,10 @@
                 statusEl.classList.add('hidden');
                 containerEl.classList.remove('hidden');
 
+                // Flatten matches from tournament groupings
                 result.typeMatches.forEach(matchTypeGroup => {
                     const matchType = matchTypeGroup.matchType || "International";
+                    
                     if (matchTypeGroup.seriesMatches) {
                         matchTypeGroup.seriesMatches.forEach(series => {
                             if (series.seriesAdWrapper && series.seriesAdWrapper.matches) {
@@ -193,13 +126,12 @@
                                     const score = matchInfo.matchScore;
                                     if (!m) return;
 
-                                    const matchId = m.matchId;
                                     const card = document.createElement('div');
-                                    card.className = "bg-zinc-900 border border-zinc-800 hover:border-lime-500/50 rounded-lg p-5 shadow-md flex flex-col justify-between transition-all cursor-pointer transform hover:-translate-y-0.5";
-                                    card.setAttribute('onclick', `openMatchDetails('${matchId}')`);
+                                    card.className = "bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg p-5 shadow-md flex flex-col justify-between transition-all";
 
-                                    const team1Score = score && score.team1Score ? `${score.team1Score.inngs1.runs}/${score.team1Score.inngs1.wickets || 0} <span class="text-xs text-zinc-400 font-normal">(${score.team1Score.inngs1.overs} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
-                                    const team2Score = score && score.team2Score ? `${score.team2Score.inngs1.runs}/${score.team2Score.inngs1.wickets || 0} <span class="text-xs text-zinc-400 font-normal">(${score.team2Score.inngs1.overs} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
+                                    // Safely parse rapidAPI score structures
+                                    const team1Score = score && score.team1Score ? `${score.team1Score.inngs1.runs}/${score.team1Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500 font-normal">(${score.team1Score.inngs1.overs} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
+                                    const team2Score = score && score.team2Score ? `${score.team2Score.inngs1.runs}/${score.team2Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500 font-normal">(${score.team2Score.inngs1.overs} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
 
                                     card.innerHTML = `
                                         <div>
@@ -221,9 +153,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="mt-5 pt-3 border-t border-zinc-800/80 text-xs font-semibold text-sky-400 tracking-wide flex justify-between items-center">
-                                            <span>👉 ${m.status || 'Match updating...'}</span>
-                                            <span class="text-[11px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded hover:bg-lime-500 hover:text-black transition-colors">Stats ➔</span>
+                                        <div class="mt-5 pt-3 border-t border-zinc-800/80 text-xs font-semibold text-sky-400 tracking-wide">
+                                            👉 ${m.status || 'Match calculations updating...'}
                                         </div>
                                     `;
                                     containerEl.appendChild(card);
@@ -233,106 +164,86 @@
                     }
                 });
 
+                if(containerEl.children.length === 0) {
+                     statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No active live matches parsed.</p>`;
+                     statusEl.classList.remove('hidden');
+                }
+
                 indicatorEl.innerText = "✅ Updated";
             } catch (err) {
                 console.error(err);
                 indicatorEl.innerText = "❌ Offline";
+                statusEl.innerHTML = `<p class="text-xs text-red-500">RapidAPI connection error. Verify your account plan details.</p>`;
             }
         }
 
-        // FETCH EXPLICIT SCORECARD + COMMENTARY METRICS DATA MATRIX
-        async function openMatchDetails(matchId) {
-            activeMatchId = matchId;
-            document.getElementById('match-modal').classList.remove('hidden');
-            document.body.classList.add('overflow-hidden'); // Hold background page scrolling
-
-            // Clear legacy data items from modal framework
-            document.getElementById('modal-batsmen-body').innerHTML = `<tr><td colspan="6" class="p-4 text-center text-zinc-500 animate-pulse">Loading Live Batting Metrics...</td></tr>`;
-            document.getElementById('modal-bowlers-body').innerHTML = `<tr><td colspan="6" class="p-4 text-center text-zinc-500 animate-pulse">Loading Live Bowling Figures...</td></tr>`;
-            document.getElementById('modal-commentary-timeline').innerHTML = `<p class="text-xs text-zinc-500 text-center py-4 animate-pulse">Connecting to ball-by-ball wire...</p>`;
-
-            // Pull full dataset instantly
-            await updateModalData();
-
-            // Establish precise micro-sync interval loops (15s cadence for live scoreboard metrics)
-            clearInterval(modalRefreshInterval);
-            modalRefreshInterval = setInterval(updateModalData, 15000);
-        }
-
-        async function updateModalData() {
-            if (!activeMatchId) return;
-
-            const HSCARD_URL = `https://cricbuzz-cricket.p.rapidapi.com/mcenter/v1/${activeMatchId}/hscard`;
-            const COMM_URL = `https://cricbuzz-cricket.p.rapidapi.com/mcenter/v1/${activeMatchId}/commentary`;
+        // 2. Schedule List Fetcher using your RapidAPI Key
+        async function fetchSchedules() {
+            const statusEl = document.getElementById('schedule-status-message');
+            const containerEl = document.getElementById('schedule-container');
 
             try {
-                // Parallel fetching logic for optimization
-                const [scorecardRes, commentaryRes] = await Promise.all([
-                    fetch(HSCARD_URL, { method: "GET", headers: HEADERS }),
-                    fetch(COMM_URL, { method: "GET", headers: HEADERS })
-                ]);
+                const response = await fetch(UPCOMING_MATCHES_URL, { method: "GET", headers: HEADERS });
+                if (!response.ok) throw new Error("Could not download fixture list.");
+                const result = await response.json();
 
-                if (scorecardRes.ok) {
-                    const scData = await scorecardRes.json();
-                    renderModalScorecard(scData);
+                if (!result.typeMatches) {
+                    statusEl.innerHTML = `<p class="text-sm text-amber-400">Failed parsing schedules from RapidAPI.</p>`;
+                    return;
                 }
-                if (commentaryRes.ok) {
-                    const commData = await commentaryRes.json();
-                    renderModalCommentary(commData);
-                }
+
+                containerEl.innerHTML = '';
+                statusEl.classList.add('hidden');
+                containerEl.classList.remove('hidden');
+
+                result.typeMatches.forEach(matchTypeGroup => {
+                    const matchType = matchTypeGroup.matchType || "Match";
+                    if(matchTypeGroup.seriesMatches) {
+                        matchTypeGroup.seriesMatches.forEach(series => {
+                            if(series.seriesAdWrapper && series.seriesAdWrapper.matches) {
+                                series.seriesAdWrapper.matches.forEach(matchInfo => {
+                                    const m = matchInfo.matchInfo;
+                                    if(!m) return;
+
+                                    const card = document.createElement('div');
+                                    card.className = "bg-zinc-900 border border-zinc-800 rounded-lg p-5 flex flex-col justify-between shadow-sm";
+                                    
+                                    let dateLabel = "Date TBD";
+                                    if(m.startDate) {
+                                        dateLabel = new Date(parseInt(m.startDate)).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                                    }
+
+                                    card.innerHTML = `
+                                        <div>
+                                            <div class="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-wide border-b border-zinc-800/60 pb-2 mb-3">
+                                                <span>${matchType}</span>
+                                                <span class="text-lime-400 font-mono bg-lime-950/20 px-2 py-0.5 rounded">${dateLabel}</span>
+                                            </div>
+                                            <h3 class="text-sm font-bold text-zinc-200 mb-1">${m.team1.teamName} vs ${m.team2.teamName}</h3>
+                                            <p class="text-xs text-zinc-500 mb-4">${m.venueInfo?.ground || 'Venue information not listed'}</p>
+                                        </div>
+                                        <div class="pt-3 border-t border-zinc-800/50 flex justify-between items-center text-[11px] text-zinc-400 font-medium">
+                                            <span class="truncate max-w-[70%]">${m.seriesName}</span>
+                                            <span class="text-amber-500 font-semibold bg-amber-950/10 px-1.5 py-0.5 rounded border border-amber-900/20">${m.state || 'Finished'}</span>
+                                        </div>
+                                    `;
+                                    containerEl.appendChild(card);
+                                });
+                            }
+                        });
+                    }
+                });
+
+                scheduleFetched = true;
             } catch (err) {
-                console.error("Modal Engine Fetch Fault:", err);
+                console.error(err);
+                statusEl.innerHTML = `<p class="text-xs text-red-400">Error rendering upcoming calendar list via RapidAPI.</p>`;
             }
         }
 
-        function renderModalScorecard(data) {
-            if (!data) return;
-            
-            // Map header status rows
-            document.getElementById('modal-match-title').innerText = data.matchHeader?.seriesName || "Live Performance Tracker";
-            document.getElementById('modal-match-status').innerText = `👉 ${data.status || 'Match live in progress'}`;
-
-            document.getElementById('modal-team1-name').innerText = data.miniscore?.teamsMiniScore?.[0]?.teamName || "Team 1";
-            document.getElementById('modal-team1-score').innerText = data.miniscore?.teamsMiniScore?.[0]?.score || "Yet to bat";
-            
-            document.getElementById('modal-team2-name').innerText = data.miniscore?.teamsMiniScore?.[1]?.teamName || "Team 2";
-            document.getElementById('modal-team2-score').innerText = data.miniscore?.teamsMiniScore?.[1]?.score || "Yet to bat";
-
-            // Process Active Batsmen Lines safely
-            const batsBody = document.getElementById('modal-batsmen-body');
-            batsBody.innerHTML = '';
-            const batsList = data.miniscore?.batsman || [];
-
-            if(batsList.length === 0) {
-                batsBody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-zinc-500">Innings data initializing...</td></tr>`;
-            } else {
-                batsList.forEach(b => {
-                    const row = document.createElement('tr');
-                    row.className = "hover:bg-zinc-900 border-b border-zinc-800/40";
-                    row.innerHTML = `
-                        <td class="p-3 font-bold text-zinc-100">${b.name} ${b.isStriker ? '<span class="text-lime-400 font-mono text-[10px] ml-1">★</span>' : ''}</td>
-                        <td class="p-3 text-center font-mono font-bold">${b.runs || 0}</td>
-                        <td class="p-3 text-center text-zinc-400 font-mono">${b.balls || 0}</td>
-                        <td class="p-3 text-center text-zinc-400 font-mono">${b.fours || 0}</td>
-                        <td class="p-3 text-center text-zinc-400 font-mono">${b.sixes || 0}</td>
-                        <td class="p-3 text-right text-zinc-400 font-mono">${b.strikeRate || '0.00'}</td>
-                    `;
-                    batsBody.appendChild(row);
-                });
-            }
-
-            // Process Active Bowler Lines safely
-            const bowlBody = document.getElementById('modal-bowlers-body');
-            bowlBody.innerHTML = '';
-            const bowlList = data.miniscore?.bowler || [];
-
-            if(bowlList.length === 0) {
-                bowlBody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-zinc-500">Bowlers taking run-ups...</td></tr>`;
-            } else {
-                bowlList.forEach(b => {
-                    const row = document.createElement('tr');
-                    row.className = "hover:bg-zinc-900 border-b border-zinc-800/40";
-                    row.innerHTML = `
-                        <td class="p-3 font-bold text-zinc-100">${b.name}</td>
-                        <td class="p-3 text-center font-mono">${b.overs || '0'}</td>
-                        <td class="p-3 text-center
+        // Initialize background sync tracking engine loops
+        fetchLiveScores();
+        setInterval(fetchLiveScores, 45000); // 45 seconds cadence to respect basic RapidAPI subscription quotas
+    </script>
+</body>
+</html>
