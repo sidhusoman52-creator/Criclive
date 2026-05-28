@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CricLive</title>
+    <title>CricLive - Premium Live Scores</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        .cricbuzz-dark { background-color: #1a1a1a; }
-        .cb-nav { background-color: #004f3f; } /* Classic Cricbuzz Green */
+        .cb-nav { background-color: #004f3f; }
         .cb-bg { background-color: #0f1011; }
         .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     </style>
 </head>
-<body class="cb-bg min-h-screen text-gray-100 font-sans">
+<body class="cb-bg min-h-screen text-gray-100 font-sans relative" id="app-body">
 
+    <!-- Top Branding Header -->
     <header class="cb-nav text-white shadow-md">
         <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-3">
@@ -21,25 +21,28 @@
                 <span class="text-xs font-bold uppercase tracking-widest text-lime-400 border border-lime-400/30 px-1.5 py-0.5 rounded animate-pulse">Live App</span>
             </div>
             <div id="refresh-indicator" class="text-xs text-lime-300 font-mono bg-emerald-900/50 px-2 py-1 rounded border border-emerald-700/30">
-                🔄 Syncing live...
+                🔄 Syncing...
             </div>
         </div>
     </header>
 
+    <!-- Main Navigation Bar -->
     <nav class="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
-        <div class="max-w-5xl mx-auto flex overflow-x-auto font-medium text-sm">
-            <button onclick="switchTab('live')" id="tab-live" class="py-3 px-6 border-b-2 border-lime-500 text-lime-500 whitespace-nowrap font-bold transition-all">
-                Live Matches
-            </button>
-            <button onclick="switchTab('schedule')" id="tab-schedule" class="py-3 px-6 border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap transition-all">
-                Schedules
-            </button>
+        <div class="max-w-5xl mx-auto flex items-center justify-between px-4">
+            <div class="flex font-medium text-sm">
+                <button onclick="switchMainTab('live')" id="tab-live" class="py-4 px-6 border-b-2 border-lime-500 text-lime-500 font-bold transition-all whitespace-nowrap">
+                    Live Matches
+                </button>
+                <button onclick="switchMainTab('schedule')" id="tab-schedule" class="py-4 px-6 border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition-all whitespace-nowrap">
+                    Schedules
+                </button>
+            </div>
         </div>
     </nav>
 
     <main class="max-w-5xl mx-auto px-4 py-6">
-        
-        <section id="content-live" class="tab-content">
+        <!-- Live Feed Main Section -->
+        <section id="content-live" class="main-tab-content">
             <div id="status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
                 <p class="text-sm text-zinc-400 animate-pulse">Connecting to RapidAPI CricLive stream...</p>
             </div>
@@ -47,7 +50,8 @@
             </div>
         </section>
 
-        <section id="content-schedule" class="tab-content hidden">
+        <!-- Schedule Main Section -->
+        <section id="content-schedule" class="main-tab-content hidden">
             <div id="schedule-status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
                 <p class="text-sm text-zinc-400 animate-pulse">Loading upcoming cricket calendar...</p>
             </div>
@@ -55,28 +59,120 @@
             </div>
         </section>
 
+        <!-- DYNAMIC DETAILED MATCH VIEW CONTAINER (Appears Below Feeds When Clicked) -->
+        <section id="detailed-match-view" class="mt-8 bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl hidden">
+            <!-- Detail Header Controls -->
+            <div class="flex justify-between items-start border-b border-zinc-800 pb-4 mb-4 flex-wrap gap-3">
+                <div>
+                    <span id="detail-match-type" class="text-[10px] bg-lime-950 text-lime-400 border border-lime-800 px-2 py-0.5 rounded font-bold uppercase tracking-wider"></span>
+                    <h2 id="detail-series-name" class="text-sm text-zinc-200 font-bold mt-1"></h2>
+                </div>
+                <button onclick="closeDetailView()" class="text-xs text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-lg border border-zinc-700 font-semibold transition-colors">
+                    ✕ Close Match Center
+                </button>
+            </div>
+
+            <!-- Match Center Interactive Sub-Tabs Navigation Row -->
+            <div class="flex border-b border-zinc-800 mb-6 font-semibold text-xs overflow-x-auto">
+                <button onclick="switchSubTab('match-info')" id="subtab-match-info" class="py-2.5 px-4 border-b-2 border-lime-500 text-lime-500 whitespace-nowrap transition-all">
+                    📋 Live Info
+                </button>
+                <button onclick="switchSubTab('scorecard')" id="subtab-scorecard" class="py-2.5 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap transition-all">
+                    📊 Live Scorecard (Bat/Bowl)
+                </button>
+                <button onclick="switchSubTab('venue')" id="subtab-venue" class="py-2.5 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap transition-all">
+                    📍 Venue Details
+                </button>
+            </div>
+
+            <!-- SUB-TAB 1: LIVE INFO -->
+            <div id="subcontent-match-info" class="sub-tab-content space-y-4">
+                <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800/60 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span id="detail-team1-name" class="font-bold text-base text-zinc-300"></span>
+                        <span id="detail-team1-score" class="font-mono font-bold text-white"></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span id="detail-team2-name" class="font-bold text-base text-zinc-300"></span>
+                        <span id="detail-team2-score" class="font-mono font-bold text-white"></span>
+                    </div>
+                    <div id="detail-match-status" class="text-xs font-semibold text-amber-400 pt-2 border-t border-zinc-800 text-center"></div>
+                </div>
+            </div>
+
+            <!-- SUB-TAB 2: LIVE SCORECARD (YOUR FEATURE REQUEST) -->
+            <div id="subcontent-scorecard" class="sub-tab-content hidden space-y-6">
+                <!-- Batsmen Box -->
+                <div>
+                    <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">🏏 Active Batsmen</h4>
+                    <div class="table-container bg-zinc-950 border border-zinc-800 rounded-lg">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-zinc-800 bg-zinc-900/50 text-zinc-400">
+                                    <th class="p-3 font-semibold">Batsman</th>
+                                    <th class="p-3 font-mono font-semibold text-center">Runs</th>
+                                    <th class="p-3 font-mono font-semibold text-center">Balls</th>
+                                    <th class="p-3 font-mono font-semibold text-center">4s</th>
+                                    <th class="p-3 font-mono font-semibold text-center">6s</th>
+                                    <th class="p-3 font-mono font-semibold text-center">SR</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detail-batsmen-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Bowler Box -->
+                <div>
+                    <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">⚾ Active Bowler</h4>
+                    <div class="table-container bg-zinc-950 border border-zinc-800 rounded-lg">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-zinc-800 bg-zinc-900/50 text-zinc-400">
+                                    <th class="p-3 font-semibold">Bowler</th>
+                                    <th class="p-3 font-mono font-semibold text-center">Overs</th>
+                                    <th class="p-3 font-mono font-semibold text-center">Maidens</th>
+                                    <th class="p-3 font-mono font-semibold text-center">Runs</th>
+                                    <th class="p-3 font-mono font-semibold text-center">Wickets</th>
+                                    <th class="p-3 font-mono font-semibold text-center">Economy</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detail-bowler-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="detail-no-stats-msg" class="text-center py-6 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-500 hidden">
+                    Live batsman and bowler figures aren't reporting currently for this match state.
+                </div>
+            </div>
+
+            <!-- SUB-TAB 3: VENUE DETAILS -->
+            <div id="subcontent-venue" class="sub-tab-content hidden">
+                <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 text-xs space-y-2">
+                    <p class="text-zinc-400"><span class="font-bold text-zinc-300">Stadium:</span> <span id="detail-venue-ground"></span></p>
+                    <p class="text-zinc-400"><span class="font-bold text-zinc-300">City Location:</span> <span id="detail-venue-city"></span></p>
+                </div>
+            </div>
+        </section>
     </main>
 
     <script>
-        // RapidAPI Authorization Configuration
         const RAPIDAPI_KEY = "5c86953d66mshe0d3e06701aa1ddp14c43djsn3eac42f75725";
         const RAPIDAPI_HOST = "cricbuzz-cricket.p.rapidapi.com";
+        const HEADERS = { "Content-Type": "application/json", "x-rapidapi-host": RAPIDAPI_HOST, "x-rapidapi-key": RAPIDAPI_KEY };
 
-        const HEADERS = {
-            "Content-Type": "application/json",
-            "x-rapidapi-host": RAPIDAPI_HOST,
-            "x-rapidapi-key": RAPIDAPI_KEY
-        };
-
-        // Standard dynamic endpoints derived from the same rapid API host
         const LIVE_MATCHES_URL = "https://cricbuzz-cricket.p.rapidapi.com/matches/v1/live";
         const UPCOMING_MATCHES_URL = "https://cricbuzz-cricket.p.rapidapi.com/matches/v1/recent";
 
         let scheduleFetched = false;
+        let globalLiveMatchesCache = [];
+        let currentlySelectedMatchIndex = null;
 
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('nav button').forEach(btn => {
+        // Switches Main App Level View Panels
+        function switchMainTab(tabName) {
+            document.querySelectorAll('.main-tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('nav > div > button').forEach(btn => {
                 btn.classList.remove('text-lime-500', 'border-lime-500', 'font-bold');
                 btn.classList.add('text-gray-400', 'border-transparent');
             });
@@ -86,38 +182,47 @@
             activeBtn.classList.remove('text-gray-400', 'border-transparent');
             activeBtn.classList.add('text-lime-500', 'border-lime-500', 'font-bold');
 
-            if (tabName === 'schedule' && !scheduleFetched) {
-                fetchSchedules();
-            }
+            if (tabName === 'schedule' && !scheduleFetched) fetchSchedules();
         }
 
-        // 1. Live Feed Fetcher using your RapidAPI Key
+        // Switches Sub-Tab Panels Inside the Match Center Pane
+        function switchSubTab(subTabName) {
+            document.querySelectorAll('.sub-tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('#detailed-match-view button[id^="subtab-"]').forEach(btn => {
+                btn.classList.remove('text-lime-500', 'border-lime-500');
+                btn.classList.add('text-gray-400', 'border-transparent');
+            });
+
+            document.getElementById(`subcontent-${subTabName}`).classList.remove('hidden');
+            const activeSubBtn = document.getElementById(`subtab-${subTabName}`);
+            activeSubBtn.classList.remove('text-gray-400', 'border-transparent');
+            activeSubBtn.classList.add('text-lime-500', 'border-lime-500');
+        }
+
+        // Render Live Score Updates Dashboard Engine 
         async function fetchLiveScores() {
             const statusEl = document.getElementById('status-message');
             const containerEl = document.getElementById('matches-container');
             const indicatorEl = document.getElementById('refresh-indicator');
 
             try {
-                indicatorEl.innerText = "🔄 Syncing live...";
+                indicatorEl.innerText = "🔄 Syncing...";
                 const response = await fetch(LIVE_MATCHES_URL, { method: "GET", headers: HEADERS });
-                
                 if (!response.ok) throw new Error(`HTTP Error Code ${response.status}`);
                 const result = await response.json();
 
-                // Check for matches array inside rapidapi cricbuzz layout structural type
                 if (!result.typeMatches || result.typeMatches.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No international or domestic games are live right now.</p>`;
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No matches are running live right now.</p>`;
                     return;
                 }
 
                 containerEl.innerHTML = '';
                 statusEl.classList.add('hidden');
                 containerEl.classList.remove('hidden');
+                globalLiveMatchesCache = [];
 
-                // Flatten matches from tournament groupings
                 result.typeMatches.forEach(matchTypeGroup => {
                     const matchType = matchTypeGroup.matchType || "International";
-                    
                     if (matchTypeGroup.seriesMatches) {
                         matchTypeGroup.seriesMatches.forEach(series => {
                             if (series.seriesAdWrapper && series.seriesAdWrapper.matches) {
@@ -126,12 +231,15 @@
                                     const score = matchInfo.matchScore;
                                     if (!m) return;
 
-                                    const card = document.createElement('div');
-                                    card.className = "bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg p-5 shadow-md flex flex-col justify-between transition-all";
+                                    globalLiveMatchesCache.push({ matchType, ...matchInfo });
+                                    const arrayIndexId = globalLiveMatchesCache.length - 1;
 
-                                    // Safely parse rapidAPI score structures
-                                    const team1Score = score && score.team1Score ? `${score.team1Score.inngs1.runs}/${score.team1Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500 font-normal">(${score.team1Score.inngs1.overs} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
-                                    const team2Score = score && score.team2Score ? `${score.team2Score.inngs1.runs}/${score.team2Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500 font-normal">(${score.team2Score.inngs1.overs} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
+                                    const card = document.createElement('div');
+                                    card.className = "bg-zinc-900 border border-zinc-800 hover:border-lime-500/40 rounded-lg p-5 shadow-md flex flex-col justify-between cursor-pointer transition-all transform hover:-translate-y-0.5";
+                                    card.setAttribute('onclick', `openMatchDetailsPanel(${arrayIndexId})`);
+
+                                    const team1Score = score && score.team1Score ? `${score.team1Score.inngs1.runs}/${score.team1Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500">(${score.team1Score.inngs1.overs} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
+                                    const team2Score = score && score.team2Score ? `${score.team2Score.inngs1.runs}/${score.team2Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500">(${score.team2Score.inngs1.overs} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
 
                                     card.innerHTML = `
                                         <div>
@@ -141,7 +249,7 @@
                                                     <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>${m.state || 'LIVE'}
                                                 </span>
                                             </div>
-                                            <h2 class="text-xs text-zinc-400 line-clamp-1 mb-4 font-medium">${m.seriesName}</h2>
+                                            <h2 class="text-xs text-zinc-400 line-clamp-1 mb-4">${m.seriesName}</h2>
                                             <div class="space-y-3.5 my-2">
                                                 <div class="flex justify-between items-center">
                                                     <span class="font-bold text-zinc-200 text-base tracking-tight">${m.team1.teamName}</span>
@@ -153,8 +261,9 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="mt-5 pt-3 border-t border-zinc-800/80 text-xs font-semibold text-sky-400 tracking-wide">
-                                            👉 ${m.status || 'Match calculations updating...'}
+                                        <div class="mt-5 pt-3 border-t border-zinc-800/80 flex justify-between items-center text-xs font-semibold text-sky-400">
+                                            <span>👉 ${m.status || 'Updating...'}</span>
+                                            <span class="text-[10px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">View Center ➔</span>
                                         </div>
                                     `;
                                     containerEl.appendChild(card);
@@ -164,86 +273,49 @@
                     }
                 });
 
-                if(containerEl.children.length === 0) {
-                     statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No active live matches parsed.</p>`;
-                     statusEl.classList.remove('hidden');
-                }
-
                 indicatorEl.innerText = "✅ Updated";
+
+                // Live Refresh Mechanism: Keeps score tab updated if user is viewing it live
+                if (currentlySelectedMatchIndex !== null) {
+                    updateDetailFields(currentlySelectedMatchIndex);
+                }
             } catch (err) {
                 console.error(err);
                 indicatorEl.innerText = "❌ Offline";
-                statusEl.innerHTML = `<p class="text-xs text-red-500">RapidAPI connection error. Verify your account plan details.</p>`;
             }
         }
 
-        // 2. Schedule List Fetcher using your RapidAPI Key
-        async function fetchSchedules() {
-            const statusEl = document.getElementById('schedule-status-message');
-            const containerEl = document.getElementById('schedule-container');
-
-            try {
-                const response = await fetch(UPCOMING_MATCHES_URL, { method: "GET", headers: HEADERS });
-                if (!response.ok) throw new Error("Could not download fixture list.");
-                const result = await response.json();
-
-                if (!result.typeMatches) {
-                    statusEl.innerHTML = `<p class="text-sm text-amber-400">Failed parsing schedules from RapidAPI.</p>`;
-                    return;
-                }
-
-                containerEl.innerHTML = '';
-                statusEl.classList.add('hidden');
-                containerEl.classList.remove('hidden');
-
-                result.typeMatches.forEach(matchTypeGroup => {
-                    const matchType = matchTypeGroup.matchType || "Match";
-                    if(matchTypeGroup.seriesMatches) {
-                        matchTypeGroup.seriesMatches.forEach(series => {
-                            if(series.seriesAdWrapper && series.seriesAdWrapper.matches) {
-                                series.seriesAdWrapper.matches.forEach(matchInfo => {
-                                    const m = matchInfo.matchInfo;
-                                    if(!m) return;
-
-                                    const card = document.createElement('div');
-                                    card.className = "bg-zinc-900 border border-zinc-800 rounded-lg p-5 flex flex-col justify-between shadow-sm";
-                                    
-                                    let dateLabel = "Date TBD";
-                                    if(m.startDate) {
-                                        dateLabel = new Date(parseInt(m.startDate)).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                                    }
-
-                                    card.innerHTML = `
-                                        <div>
-                                            <div class="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-wide border-b border-zinc-800/60 pb-2 mb-3">
-                                                <span>${matchType}</span>
-                                                <span class="text-lime-400 font-mono bg-lime-950/20 px-2 py-0.5 rounded">${dateLabel}</span>
-                                            </div>
-                                            <h3 class="text-sm font-bold text-zinc-200 mb-1">${m.team1.teamName} vs ${m.team2.teamName}</h3>
-                                            <p class="text-xs text-zinc-500 mb-4">${m.venueInfo?.ground || 'Venue information not listed'}</p>
-                                        </div>
-                                        <div class="pt-3 border-t border-zinc-800/50 flex justify-between items-center text-[11px] text-zinc-400 font-medium">
-                                            <span class="truncate max-w-[70%]">${m.seriesName}</span>
-                                            <span class="text-amber-500 font-semibold bg-amber-950/10 px-1.5 py-0.5 rounded border border-amber-900/20">${m.state || 'Finished'}</span>
-                                        </div>
-                                    `;
-                                    containerEl.appendChild(card);
-                                });
-                            }
-                        });
-                    }
-                });
-
-                scheduleFetched = true;
-            } catch (err) {
-                console.error(err);
-                statusEl.innerHTML = `<p class="text-xs text-red-400">Error rendering upcoming calendar list via RapidAPI.</p>`;
-            }
+        // Activates the Tab Panel Module Section 
+        function openMatchDetailsPanel(index) {
+            currentlySelectedMatchIndex = index;
+            updateDetailFields(index);
+            
+            const viewPanel = document.getElementById('detailed-match-view');
+            viewPanel.classList.remove('hidden');
+            
+            // Focus and scroll directly to match details area smoothly
+            viewPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            switchSubTab('scorecard'); // Default view to the requested scorecard tab upon click
         }
 
-        // Initialize background sync tracking engine loops
-        fetchLiveScores();
-        setInterval(fetchLiveScores, 45000); // 45 seconds cadence to respect basic RapidAPI subscription quotas
-    </script>
-</body>
-</html>
+        // Dynamic Field Renderer logic mapping data arrays into the respective tabs
+        function updateDetailFields(index) {
+            const dataItem = globalLiveMatchesCache[index];
+            if (!dataItem) return;
+
+            const m = dataItem.matchInfo;
+            const score = dataItem.matchScore;
+            const mini = dataItem.miniscore;
+
+            // Render Tab Info
+            document.getElementById('detail-match-type').innerText = dataItem.matchType;
+            document.getElementById('detail-series-name').innerText = m.seriesName;
+            document.getElementById('detail-team1-name').innerText = m.team1.teamName;
+            document.getElementById('detail-team2-name').innerText = m.team2.teamName;
+            document.getElementById('detail-match-status').innerText = m.status || 'Evaluating fields...';
+
+            document.getElementById('detail-team1-score').innerHTML = score && score.team1Score ? `${score.team1Score.inngs1.runs}/${score.team1Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500">(${score.team1Score.inngs1.overs} ov)</span>` : 'Yet to bat';
+            document.getElementById('detail-team2-score').innerHTML = score && score.team2Score ? `${score.team2Score.inngs1.runs}/${score.team2Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500">(${score.team2Score.inngs1.overs} ov)</span>` : 'Yet to bat';
+
+            // Render Tab Venue Info
+            document.getElementById('de
