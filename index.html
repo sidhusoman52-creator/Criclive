@@ -9,7 +9,6 @@
         .cricbuzz-dark { background-color: #1a1a1a; }
         .cb-nav { background-color: #004f3f; } /* Classic Cricbuzz Green */
         .cb-bg { background-color: #0f1011; }
-        /* Simple utility class for table scrolling on tiny screens */
         .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     </style>
 </head>
@@ -35,9 +34,6 @@
             <button onclick="switchTab('schedule')" id="tab-schedule" class="py-3 px-6 border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap transition-all">
                 Schedules
             </button>
-            <button onclick="switchTab('tables')" id="tab-tables" class="py-3 px-6 border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap transition-all">
-                Points Table
-            </button>
         </div>
     </nav>
 
@@ -45,10 +41,10 @@
         
         <section id="content-live" class="tab-content">
             <div id="status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
-                <p class="text-sm text-zinc-400 animate-pulse">Connecting to live Cricbuzz server stream...</p>
+                <p class="text-sm text-zinc-400 animate-pulse">Connecting to RapidAPI Cricbuzz stream...</p>
             </div>
             <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-                </div>
+            </div>
         </section>
 
         <section id="content-schedule" class="tab-content hidden">
@@ -56,50 +52,28 @@
                 <p class="text-sm text-zinc-400 animate-pulse">Loading upcoming cricket calendar...</p>
             </div>
             <div id="schedule-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-                </div>
-        </section>
-
-        <section id="content-tables" class="tab-content hidden">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl mb-6">
-                <label for="series-select" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">Select Tournament / Series</label>
-                <select id="series-select" onchange="handleSeriesChange()" class="w-full md:w-80 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg p-2.5 text-sm focus:outline-none focus:border-lime-500">
-                    </select>
-            </div>
-
-            <div id="table-status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
-                <p class="text-sm text-zinc-400">Select a tournament above to view current group standings.</p>
-            </div>
-
-            <div id="table-data-container" class="bg-zinc-900 border border-zinc-800 rounded-xl p-4 shadow-xl hidden table-container">
-                <table class="w-full text-left text-sm text-zinc-300">
-                    <thead class="text-xs uppercase bg-zinc-800 text-zinc-400 font-mono">
-                        <tr>
-                            <th class="px-4 py-3 rounded-l-lg">Team</th>
-                            <th class="px-3 py-3 text-center">P</th>
-                            <th class="px-3 py-3 text-center">W</th>
-                            <th class="px-3 py-3 text-center">L</th>
-                            <th class="px-3 py-3 text-center text-lime-400">Pts</th>
-                            <th class="px-4 py-3 text-right rounded-r-lg">NRR</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body" class="divide-y divide-zinc-800">
-                        </tbody>
-                </table>
             </div>
         </section>
 
     </main>
 
     <script>
-        const API_KEY = "21ba7825-b668-4ef9-b5ed-91680688b513"; 
-        const LIVE_API_URL = `https://api.cricapi.com/v1/currentMatches?apikey=${API_KEY}`;
-        const SCHEDULE_API_URL = `https://api.cricapi.com/v1/matches?apikey=${API_KEY}`;
-        const SERIES_API_URL = `https://api.cricapi.com/v1/series?apikey=${API_KEY}&offset=0`;
+        // RapidAPI Authorization Configuration
+        const RAPIDAPI_KEY = "5c86953d66mshe0d3e06701aa1ddp14c43djsn3eac42f75725";
+        const RAPIDAPI_HOST = "cricbuzz-cricket.p.rapidapi.com";
+
+        const HEADERS = {
+            "Content-Type": "application/json",
+            "x-rapidapi-host": RAPIDAPI_HOST,
+            "x-rapidapi-key": RAPIDAPI_KEY
+        };
+
+        // Standard dynamic endpoints derived from the same rapid API host
+        const LIVE_MATCHES_URL = "https://cricbuzz-cricket.p.rapidapi.com/matches/v1/live";
+        const UPCOMING_MATCHES_URL = "https://cricbuzz-cricket.p.rapidapi.com/matches/v1/recent";
 
         let scheduleFetched = false;
-        let seriesDropdownLoaded = false;
 
-        // 1. Core Navigation Manager System
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('nav button').forEach(btn => {
@@ -115,12 +89,9 @@
             if (tabName === 'schedule' && !scheduleFetched) {
                 fetchSchedules();
             }
-            if (tabName === 'tables' && !seriesDropdownLoaded) {
-                populateSeriesDropdown();
-            }
         }
 
-        // 2. Cricbuzz Interactive Live Feed Fetcher Engine
+        // 1. Live Feed Fetcher using your RapidAPI Key
         async function fetchLiveScores() {
             const statusEl = document.getElementById('status-message');
             const containerEl = document.getElementById('matches-container');
@@ -128,17 +99,14 @@
 
             try {
                 indicatorEl.innerText = "🔄 Syncing live...";
-                const response = await fetch(LIVE_API_URL);
+                const response = await fetch(LIVE_MATCHES_URL, { method: "GET", headers: HEADERS });
+                
                 if (!response.ok) throw new Error(`HTTP Error Code ${response.status}`);
                 const result = await response.json();
 
-                if (result.status !== "success") {
-                    statusEl.innerHTML = `<p class="text-sm text-red-400 font-mono">API Processing Fault: ${result.reason}</p>`;
-                    return;
-                }
-
-                if (!result.data || result.data.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 Server states no international/domestic games are live right now.</p>`;
+                // Check for matches array inside rapidapi cricbuzz layout structural type
+                if (!result.typeMatches || result.typeMatches.length === 0) {
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No international or domestic games are live right now.</p>`;
                     return;
                 }
 
@@ -146,67 +114,81 @@
                 statusEl.classList.add('hidden');
                 containerEl.classList.remove('hidden');
 
-                result.data.forEach(match => {
-                    const card = document.createElement('div');
-                    card.className = "bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg p-5 shadow-md flex flex-col justify-between transition-all";
+                // Flatten matches from tournament groupings
+                result.typeMatches.forEach(matchTypeGroup => {
+                    const matchType = matchTypeGroup.matchType || "International";
+                    
+                    if (matchTypeGroup.seriesMatches) {
+                        matchTypeGroup.seriesMatches.forEach(series => {
+                            if (series.seriesAdWrapper && series.seriesAdWrapper.matches) {
+                                series.seriesAdWrapper.matches.forEach(matchInfo => {
+                                    const m = matchInfo.matchInfo;
+                                    const score = matchInfo.matchScore;
+                                    if (!m) return;
 
-                    const score1 = match.score && match.score[0] ? `${match.score[0].r}/${match.score[0].w} <span class="text-xs text-zinc-500 font-normal">(${match.score[0].o} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
-                    const score2 = match.score && match.score[1] ? `${match.score[1].r}/${match.score[1].w} <span class="text-xs text-zinc-500 font-normal">(${match.score[1].o} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
+                                    const card = document.createElement('div');
+                                    card.className = "bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg p-5 shadow-md flex flex-col justify-between transition-all";
 
-                    card.innerHTML = `
-                        <div>
-                            <div class="flex justify-between items-center text-[11px] font-bold tracking-wider text-zinc-500 uppercase border-b border-zinc-800 pb-2 mb-3">
-                                <span>${match.matchType || 'International'}</span>
-                                <span class="flex items-center gap-1.5 text-rose-500 bg-rose-950/20 px-2 py-0.5 rounded font-mono text-[10px]">
-                                    <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>LIVE
-                                </span>
-                            </div>
-                            <h2 class="text-xs text-zinc-400 line-clamp-1 mb-4 font-medium">${match.name}</h2>
-                            <div class="space-y-3.5 my-2">
-                                <div class="flex justify-between items-center">
-                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${match.teams[0]}</span>
-                                    <span class="font-mono text-sm font-bold text-zinc-100">${score1}</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${match.teams[1]}</span>
-                                    <span class="font-mono text-sm font-bold text-zinc-100">${score2}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mt-5 pt-3 border-t border-zinc-800/80 text-xs font-semibold text-sky-400 tracking-wide">
-                            👉 ${match.status || 'Match calculations updating...'}
-                        </div>
-                    `;
-                    containerEl.appendChild(card);
+                                    // Safely parse rapidAPI score structures
+                                    const team1Score = score && score.team1Score ? `${score.team1Score.inngs1.runs}/${score.team1Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500 font-normal">(${score.team1Score.inngs1.overs} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
+                                    const team2Score = score && score.team2Score ? `${score.team2Score.inngs1.runs}/${score.team2Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500 font-normal">(${score.team2Score.inngs1.overs} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
+
+                                    card.innerHTML = `
+                                        <div>
+                                            <div class="flex justify-between items-center text-[11px] font-bold tracking-wider text-zinc-500 uppercase border-b border-zinc-800 pb-2 mb-3">
+                                                <span>${matchType}</span>
+                                                <span class="flex items-center gap-1.5 text-rose-500 bg-rose-950/20 px-2 py-0.5 rounded font-mono text-[10px]">
+                                                    <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>${m.state || 'LIVE'}
+                                                </span>
+                                            </div>
+                                            <h2 class="text-xs text-zinc-400 line-clamp-1 mb-4 font-medium">${m.seriesName}</h2>
+                                            <div class="space-y-3.5 my-2">
+                                                <div class="flex justify-between items-center">
+                                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${m.team1.teamName}</span>
+                                                    <span class="font-mono text-sm font-bold text-zinc-100">${team1Score}</span>
+                                                </div>
+                                                <div class="flex justify-between items-center">
+                                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${m.team2.teamName}</span>
+                                                    <span class="font-mono text-sm font-bold text-zinc-100">${team2Score}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-5 pt-3 border-t border-zinc-800/80 text-xs font-semibold text-sky-400 tracking-wide">
+                                            👉 ${m.status || 'Match calculations updating...'}
+                                        </div>
+                                    `;
+                                    containerEl.appendChild(card);
+                                });
+                            }
+                        });
+                    }
                 });
+
+                if(containerEl.children.length === 0) {
+                     statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No active live matches parsed.</p>`;
+                     statusEl.classList.remove('hidden');
+                }
 
                 indicatorEl.innerText = "✅ Updated";
             } catch (err) {
                 console.error(err);
                 indicatorEl.innerText = "❌ Offline";
-                statusEl.innerHTML = `<p class="text-xs text-red-500">Network connection interruption. Retrying shortly...</p>`;
+                statusEl.innerHTML = `<p class="text-xs text-red-500">RapidAPI connection error. Verify your account plan details.</p>`;
             }
         }
 
-        // 3. Cricbuzz Schedule Engine Loader
+        // 2. Schedule List Fetcher using your RapidAPI Key
         async function fetchSchedules() {
             const statusEl = document.getElementById('schedule-status-message');
             const containerEl = document.getElementById('schedule-container');
 
             try {
-                const response = await fetch(SCHEDULE_API_URL);
+                const response = await fetch(UPCOMING_MATCHES_URL, { method: "GET", headers: HEADERS });
                 if (!response.ok) throw new Error("Could not download fixture list.");
                 const result = await response.json();
 
-                if (result.status !== "success" || !result.data) {
-                    statusEl.innerHTML = `<p class="text-sm text-amber-400">Failed parsing schedules from provider.</p>`;
-                    return;
-                }
-
-                const upcomingMatches = result.data.filter(match => match.matchStarted === false);
-
-                if (upcomingMatches.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">No scheduled fixtures listed in database right now.</p>`;
+                if (!result.typeMatches) {
+                    statusEl.innerHTML = `<p class="text-sm text-amber-400">Failed parsing schedules from RapidAPI.</p>`;
                     return;
                 }
 
@@ -214,108 +196,54 @@
                 statusEl.classList.add('hidden');
                 containerEl.classList.remove('hidden');
 
-                upcomingMatches.slice(0, 20).forEach(match => {
-                    const card = document.createElement('div');
-                    card.className = "bg-zinc-900 border border-zinc-800 rounded-lg p-5 flex flex-col justify-between shadow-sm";
-                    const matchDate = match.date ? new Date(match.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Date TBD';
+                result.typeMatches.forEach(matchTypeGroup => {
+                    const matchType = matchTypeGroup.matchType || "Match";
+                    if(matchTypeGroup.seriesMatches) {
+                        matchTypeGroup.seriesMatches.forEach(series => {
+                            if(series.seriesAdWrapper && series.seriesAdWrapper.matches) {
+                                series.seriesAdWrapper.matches.forEach(matchInfo => {
+                                    const m = matchInfo.matchInfo;
+                                    if(!m) return;
 
-                    card.innerHTML = `
-                        <div>
-                            <div class="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-wide border-b border-zinc-800/60 pb-2 mb-3">
-                                <span>${match.matchType || 'Match'}</span>
-                                <span class="text-lime-400 font-mono bg-lime-950/20 px-2 py-0.5 rounded">${matchDate}</span>
-                            </div>
-                            <h3 class="text-sm font-bold text-zinc-200 mb-1">${match.name}</h3>
-                            <p class="text-xs text-zinc-500 mb-4">${match.venue || 'Venue information not listed yet'}</p>
-                        </div>
-                        <div class="pt-3 border-t border-zinc-800/50 flex justify-between items-center text-[11px] text-zinc-400 font-medium">
-                            <span>Teams: ${match.teams ? match.teams.join(' vs ') : 'TBD'}</span>
-                            <span class="text-amber-500 font-semibold bg-amber-950/10 px-1.5 py-0.5 rounded border border-amber-900/20">Upcoming</span>
-                        </div>
-                    `;
-                    containerEl.appendChild(card);
+                                    const card = document.createElement('div');
+                                    card.className = "bg-zinc-900 border border-zinc-800 rounded-lg p-5 flex flex-col justify-between shadow-sm";
+                                    
+                                    let dateLabel = "Date TBD";
+                                    if(m.startDate) {
+                                        dateLabel = new Date(parseInt(m.startDate)).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                                    }
+
+                                    card.innerHTML = `
+                                        <div>
+                                            <div class="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-wide border-b border-zinc-800/60 pb-2 mb-3">
+                                                <span>${matchType}</span>
+                                                <span class="text-lime-400 font-mono bg-lime-950/20 px-2 py-0.5 rounded">${dateLabel}</span>
+                                            </div>
+                                            <h3 class="text-sm font-bold text-zinc-200 mb-1">${m.team1.teamName} vs ${m.team2.teamName}</h3>
+                                            <p class="text-xs text-zinc-500 mb-4">${m.venueInfo?.ground || 'Venue information not listed'}</p>
+                                        </div>
+                                        <div class="pt-3 border-t border-zinc-800/50 flex justify-between items-center text-[11px] text-zinc-400 font-medium">
+                                            <span class="truncate max-w-[70%]">${m.seriesName}</span>
+                                            <span class="text-amber-500 font-semibold bg-amber-950/10 px-1.5 py-0.5 rounded border border-amber-900/20">${m.state || 'Finished'}</span>
+                                        </div>
+                                    `;
+                                    containerEl.appendChild(card);
+                                });
+                            }
+                        });
+                    }
                 });
 
                 scheduleFetched = true;
             } catch (err) {
                 console.error(err);
-                statusEl.innerHTML = `<p class="text-xs text-red-400">Error rendering upcoming calendar list.</p>`;
+                statusEl.innerHTML = `<p class="text-xs text-red-400">Error rendering upcoming calendar list via RapidAPI.</p>`;
             }
         }
 
-        // 4. Cricbuzz Tournament Rankings Engine
-        async function populateSeriesDropdown() {
-            const dropdown = document.getElementById('series-select');
-            try {
-                const response = await fetch(SERIES_API_URL);
-                const result = await response.json();
-
-                if (result.status !== "success" || !result.data) return;
-
-                dropdown.innerHTML = '<option value="" disabled selected>-- Choose an ongoing tournament --</option>';
-                
-                result.data.forEach(series => {
-                    const option = document.createElement('option');
-                    option.value = series.id;
-                    option.innerText = `${series.name} (${series.matches} Matches)`;
-                    dropdown.appendChild(option);
-                });
-
-                seriesDropdownLoaded = true;
-            } catch (err) {
-                console.error("Error populating dropdown:", err);
-            }
-        }
-
-        async function handleSeriesChange() {
-            const seriesId = document.getElementById('series-select').value;
-            const statusEl = document.getElementById('table-status-message');
-            const dataContainerEl = document.getElementById('table-data-container');
-            const tbody = document.getElementById('table-body');
-
-            statusEl.innerHTML = `<p class="text-sm text-zinc-400 animate-pulse">Fetching official series metrics matrix...</p>`;
-            statusEl.classList.remove('hidden');
-            dataContainerEl.classList.add('hidden');
-
-            try {
-                const url = `https://api.cricapi.com/v1/series_points?apikey=${API_KEY}&id=${seriesId}`;
-                const response = await fetch(url);
-                const result = await response.json();
-
-                if (result.status !== "success" || !result.data || result.data.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-amber-400">⚠️ Standing metrics table not initialized yet by provider for this series.</p>`;
-                    return;
-                }
-
-                tbody.innerHTML = '';
-                statusEl.classList.add('hidden');
-                dataContainerEl.classList.remove('hidden');
-
-                result.data.forEach(team => {
-                    const row = document.createElement('tr');
-                    row.className = "hover:bg-zinc-800/40 border-b border-zinc-800/50 transition-colors";
-                    row.innerHTML = `
-                        <td class="px-4 py-3.5 font-bold text-zinc-100 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-zinc-700"></span>${team.teamname || 'Team'}
-                        </td>
-                        <td class="px-3 py-3.5 text-center font-medium">${team.matches || 0}</td>
-                        <td class="px-3 py-3.5 text-center text-emerald-500 font-medium">${team.wins || 0}</td>
-                        <td class="px-3 py-3.5 text-center text-rose-500 font-medium">${team.loss || 0}</td>
-                        <td class="px-3 py-3.5 text-center font-bold text-lime-400 font-mono">${team.points || 0}</td>
-                        <td class="px-4 py-3.5 text-right font-mono text-zinc-400 text-xs">${team.netRunRate || '0.000'}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-
-            } catch (err) {
-                console.error(err);
-                statusEl.innerHTML = `<p class="text-xs text-red-400">Failed generating standing rows due to a connection error.</p>`;
-            }
-        }
-
-        // Initialize background tracking sync
+        // Initialize background sync tracking engine loops
         fetchLiveScores();
-        setInterval(fetchLiveScores, 30000);
+        setInterval(fetchLiveScores, 45000); // 45 seconds cadence to respect basic RapidAPI subscription quotas
     </script>
 </body>
-    </html>
+</html>
