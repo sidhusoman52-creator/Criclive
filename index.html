@@ -185,14 +185,15 @@
             activeSubBtn.classList.add('text-lime-500', 'border-lime-500');
         }
 
+        // Deep Optional-Chaining safe-score implementation
         function getFormattedScore(teamScoreObj) {
             if (!teamScoreObj) return `<span class="text-xs text-zinc-600">Yet to bat</span>`;
-            const innings = teamScoreObj.inngs1 || teamScoreObj.inngs2;
+            const innings = teamScoreObj?.inngs1 || teamScoreObj?.inngs2;
             if (!innings) return `<span class="text-xs text-zinc-600">Yet to bat</span>`;
             
-            const runs = innings.runs ?? 0;
-            const wickets = innings.wickets ?? 10;
-            const overs = innings.overs ?? 0;
+            const runs = innings?.runs ?? 0;
+            const wickets = innings?.wickets ?? 0;
+            const overs = innings?.overs ?? 0;
             
             return `${runs}/${wickets} <span class="text-xs text-zinc-500">(${overs} ov)</span>`;
         }
@@ -203,34 +204,34 @@
             const indicatorEl = document.getElementById('refresh-indicator');
 
             try {
-                indicatorEl.innerText = "🔄 Syncing...";
+                if (indicatorEl) indicatorEl.innerText = "🔄 Syncing...";
                 const response = await fetch(LIVE_MATCHES_URL, { method: "GET", headers: HEADERS });
                 if (!response.ok) throw new Error(`HTTP Error Code ${response.status}`);
                 const result = await response.json();
 
-                if (!result.typeMatches || result.typeMatches.length === 0) {
-                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No matches are running live right now.</p>`;
+                if (!result || !result.typeMatches || result.typeMatches.length === 0) {
+                    if (statusEl) statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No matches are running live right now.</p>`;
                     return;
                 }
 
-                containerEl.innerHTML = '';
+                if (containerEl) containerEl.innerHTML = '';
                 globalLiveMatchesCache = [];
 
                 result.typeMatches.forEach(matchTypeGroup => {
-                    const matchType = matchTypeGroup.matchType || "International";
-                    if (matchTypeGroup.seriesMatches) {
+                    const matchType = matchTypeGroup?.matchType || "Match";
+                    if (matchTypeGroup?.seriesMatches) {
                         matchTypeGroup.seriesMatches.forEach(series => {
-                            if (series.seriesAdWrapper && series.seriesAdWrapper.matches) {
+                            if (series?.seriesAdWrapper?.matches) {
                                 series.seriesAdWrapper.matches.forEach(matchInfo => {
-                                    const m = matchInfo.matchInfo;
-                                    const score = matchInfo.matchScore;
+                                    const m = matchInfo?.matchInfo;
+                                    const score = matchInfo?.matchScore;
                                     if (!m) return;
 
                                     globalLiveMatchesCache.push({ matchType, ...matchInfo });
                                     const arrayIndexId = globalLiveMatchesCache.length - 1;
 
-                                    const team1Score = score ? getFormattedScore(score.team1Score) : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
-                                    const team2Score = score ? getFormattedScore(score.team2Score) : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
+                                    const team1Score = score ? getFormattedScore(score?.team1Score) : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
+                                    const team2Score = score ? getFormattedScore(score?.team2Score) : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
 
                                     const card = document.createElement('div');
                                     card.className = "bg-zinc-900 border border-zinc-800 hover:border-lime-500/40 rounded-lg p-5 shadow-md flex flex-col justify-between cursor-pointer transition-all transform hover:-translate-y-0.5";
@@ -241,43 +242,46 @@
                                             <div class="flex justify-between items-center text-[11px] font-bold tracking-wider text-zinc-500 uppercase border-b border-zinc-800 pb-2 mb-3">
                                                 <span>${matchType}</span>
                                                 <span class="flex items-center gap-1.5 text-rose-500 bg-rose-950/20 px-2 py-0.5 rounded font-mono text-[10px]">
-                                                    <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>${m.state || 'LIVE'}
+                                                    <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>${m?.state || 'LIVE'}
                                                 </span>
                                             </div>
-                                            <h2 class="text-xs text-zinc-400 line-clamp-1 mb-4">${m.seriesName}</h2>
+                                            <h2 class="text-xs text-zinc-400 line-clamp-1 mb-4">${m?.seriesName || 'Tournament'}</h2>
                                             <div class="space-y-3.5 my-2">
                                                 <div class="flex justify-between items-center">
-                                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${m.team1.teamName}</span>
+                                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${m?.team1?.teamName || 'Team A'}</span>
                                                     <span class="font-mono text-sm font-bold text-zinc-100">${team1Score}</span>
                                                 </div>
                                                 <div class="flex justify-between items-center">
-                                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${m.team2.teamName}</span>
+                                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${m?.team2?.teamName || 'Team B'}</span>
                                                     <span class="font-mono text-sm font-bold text-zinc-100">${team2Score}</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="mt-5 pt-3 border-t border-zinc-800/80 flex justify-between items-center text-xs font-semibold text-sky-400">
-                                            <span class="truncate max-w-[85%]">👉 ${m.status || 'Updating...'}</span>
+                                            <span class="truncate max-w-[85%]">👉 ${m?.status || 'Updating...'}</span>
                                             <span class="text-[10px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">View Center ➔</span>
                                         </div>
                                     `;
-                                    containerEl.appendChild(card);
+                                    if (containerEl) containerEl.appendChild(card);
                                 });
                             }
                         });
                     }
                 });
 
-                statusEl.classList.add('hidden');
-                containerEl.classList.remove('hidden');
-                indicatorEl.innerText = "✅ Updated";
+                if (statusEl) statusEl.classList.add('hidden');
+                if (containerEl) containerEl.classList.remove('hidden');
+                if (indicatorEl) indicatorEl.innerText = "✅ Updated";
 
                 if (currentlySelectedMatchIndex !== null) {
                     updateDetailFields(currentlySelectedMatchIndex);
                 }
             } catch (err) {
-                console.error("Data parse exception managed:", err);
-                indicatorEl.innerText = "❌ Parse Error";
+                console.error("Global Catch Layer Prevented Halt: ", err);
+                if (indicatorEl) indicatorEl.innerText = "⚠️ Error Parsing";
+                // Even if an internal render anomaly happens, force display from cache rather than hard freezing
+                if (statusEl) statusEl.classList.add('hidden');
+                if (containerEl) containerEl.classList.remove('hidden');
             }
         }
 
@@ -285,8 +289,10 @@
             currentlySelectedMatchIndex = index;
             updateDetailFields(index);
             const viewPanel = document.getElementById('detailed-match-view');
-            viewPanel.classList.remove('hidden');
-            viewPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (viewPanel) {
+                viewPanel.classList.remove('hidden');
+                viewPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
             switchSubTab('scorecard');
         }
 
@@ -294,36 +300,33 @@
             const dataItem = globalLiveMatchesCache[index];
             if (!dataItem) return;
 
-            const m = dataItem.matchInfo;
-            const score = dataItem.matchScore;
-            const mini = dataItem.miniscore;
+            const m = dataItem?.matchInfo;
+            const score = dataItem?.matchScore;
+            const mini = dataItem?.miniscore;
 
-            document.getElementById('detail-match-type').innerText = dataItem.matchType;
-            document.getElementById('detail-series-name').innerText = m.seriesName;
-            document.getElementById('detail-team1-name').innerText = m.team1.teamName;
-            document.getElementById('detail-team2-name').innerText = m.team2.teamName;
-            document.getElementById('detail-match-status').innerText = m.status || 'Evaluating fields...';
+            const elMap = {
+                'detail-match-type': dataItem?.matchType || 'Match',
+                'detail-series-name': m?.seriesName || '',
+                'detail-team1-name': m?.team1?.teamName || 'Team A',
+                'detail-team2-name': m?.team2?.teamName || 'Team B',
+                'detail-match-status': m?.status || 'Evaluating fields...',
+                'detail-venue-ground': m?.venueInfo?.ground || 'Unavailable',
+                'detail-venue-city': m?.venueInfo?.city || 'Unavailable'
+            };
 
-            document.getElementById('detail-team1-score').innerHTML = score ? getFormattedScore(score.team1Score) : 'Yet to bat';
-            document.getElementById('detail-team2-score').innerHTML = score ? getFormattedScore(score.team2Score) : 'Yet to bat';
+            for (let id in elMap) {
+                const el = document.getElementById(id);
+                if (el) el.innerText = elMap[id];
+            }
 
-            document.getElementById('detail-venue-ground').innerText = m.venueInfo?.ground || 'Unavailable';
-            document.getElementById('detail-venue-city').innerText = m.venueInfo?.city || 'Unavailable';
+            const t1ScoreEl = document.getElementById('detail-team1-score');
+            const t2ScoreEl = document.getElementById('detail-team2-score');
+            if (t1ScoreEl) t1ScoreEl.innerHTML = score ? getFormattedScore(score?.team1Score) : 'Yet to bat';
+            if (t2ScoreEl) t2ScoreEl.innerHTML = score ? getFormattedScore(score?.team2Score) : 'Yet to bat';
 
             const batBody = document.getElementById('detail-batsmen-body');
             const bowlBody = document.getElementById('detail-bowler-body');
-            batBody.innerHTML = '';
-            bowlBody.innerHTML = '';
+            if (batBody) batBody.innerHTML = '';
+            if (bowlBody) bowlBody.innerHTML = '';
 
-            if (mini && (mini.batBatsman || mini.bowlerStriker)) {
-                document.getElementById('detail-no-stats-msg').classList.add('hidden');
-                
-                const batsmenArray = [];
-                if (mini.batBatsman) batsmenArray.push({ ...mini.batBatsman, isStriker: true });
-                if (mini.batNonBatsman) batsmenArray.push({ ...mini.batNonBatsman, isStriker: false });
-
-                batsmenArray.forEach(b => {
-                    const tr = document.createElement('tr');
-                    tr.className = "border-b border-zinc-900 text-zinc-200 text-center hover:bg-zinc-900/30";
-                    tr.innerHTML = `
-                        <td class="p-3 font-medium text-left 
+            if (mini &&
