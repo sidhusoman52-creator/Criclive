@@ -322,4 +322,196 @@
                             <p class="text-sm font-bold text-rose-500">🔴 Live Feed Sync Error</p>
                             <p class="text-xs text-zinc-400 bg-black/40 p-3 rounded font-mono border border-zinc-800">${err.message}</p>
                             <p class="text-[11px] text-zinc-500 mt-2">💡 Note: Check your RapidAPI Dashboard subscription limits. If it returns status code 403 or 429, you must replace the key string.</p>
-                        <
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function openMatchDetailsPanel(index) {
+            currentlySelectedMatchIndex = index;
+            updateDetailFields(index);
+            const viewPanel = document.getElementById('detailed-match-view');
+            if (viewPanel) {
+                viewPanel.classList.remove('hidden');
+                viewPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            switchSubTab('scorecard');
+        }
+
+        function updateDetailFields(index) {
+            const dataItem = globalLiveMatchesCache[index];
+            if (!dataItem) return;
+
+        const m = dataItem.matchInfo;
+            const score = dataItem.matchScore;
+            const mini = dataItem.miniscore;
+
+            const elMap = {
+                'detail-match-type': dataItem.matchType || 'Match',
+                'detail-series-name': m && m.seriesName ? m.seriesName : '',
+                'detail-team1-name': m && m.team1 && m.team1.teamName ? m.team1.teamName : 'Team A',
+                'detail-team2-name': m && m.team2 && m.team2.teamName ? m.team2.teamName : 'Team B',
+                'detail-match-status': m && m.status ? m.status : 'Evaluating fields...',
+                'detail-venue-ground': m && m.venueInfo && m.venueInfo.ground ? m.venueInfo.ground : 'Unavailable',
+                'detail-venue-city': m && m.venueInfo && m.venueInfo.city ? m.venueInfo.city : 'Unavailable'
+            };
+
+            for (let id in elMap) {
+                const el = document.getElementById(id);
+                if (el) el.innerText = elMap[id];
+            }
+
+            const t1ScoreEl = document.getElementById('detail-team1-score');
+            const t2ScoreEl = document.getElementById('detail-team2-score');
+            if (t1ScoreEl) t1ScoreEl.innerHTML = score && score.team1Score ? getFormattedScore(score.team1Score) : 'Yet to bat';
+            if (t2ScoreEl) t2ScoreEl.innerHTML = score && score.team2Score ? getFormattedScore(score.team2Score) : 'Yet to bat';
+
+        const batBody = document.getElementById('detail-batsmen-body');
+            const bowlBody = document.getElementById('detail-bowler-body');
+            if (batBody) batBody.innerHTML = '';
+            if (bowlBody) bowlBody.innerHTML = '';
+
+            if (mini && (mini.batBatsman || mini.bowlerStriker)) {
+                const noStatsMsg = document.getElementById('detail-no-stats-msg');
+                if (noStatsMsg) noStatsMsg.classList.add('hidden');
+                
+                const batsmenArray = [];
+                if (mini.batBatsman) batsmenArray.push({ ...mini.batBatsman, isStriker: true });
+                if (mini.batNonBatsman) batsmenArray.push({ ...mini.batNonBatsman, isStriker: false });
+
+                batsmenArray.forEach(b => {
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-zinc-900 text-zinc-200 text-center hover:bg-zinc-900/30";
+                    
+                    const name = b.batName || 'Batsman';
+                    const runs = b.runs !== undefined ? b.runs : 0;
+                    const balls = b.balls !== undefined ? b.balls : 0;
+                    const fours = b.fourX !== undefined ? b.fourX : 0;
+                    const sixes = b.sixX !== undefined ? b.sixX : 0;
+                    const sr = b.strikeRate || '0.0';
+                    const strikerMarker = b.isStriker ? '<span class="text-lime-400 font-bold ml-1">*</span>' : '';
+
+                     tr.innerHTML = `
+                        <td class="p-3 font-medium text-left text-zinc-100">${name} ${strikerMarker}</td>
+                        <td class="p-3 font-mono font-bold text-white">${runs}</td>
+                        <td class="p-3 font-mono text-zinc-400">${balls}</td>
+                        <td class="p-3 font-mono text-zinc-500">${fours}</td>
+                        <td class="p-3 font-mono text-zinc-500">${sixes}</td>
+                        <td class="p-3 font-mono text-zinc-400">${sr}</td>
+                    `;
+                    if (batBody) batBody.appendChild(tr);
+                });
+
+                const bowlerArray = [];
+                if (mini.bowlerStriker) bowlerArray.push(mini.bowlerStriker);
+                if (mini.bowlerNonStriker) bowlerArray.push(mini.bowlerNonStriker);
+
+                bowlerArray.forEach(bowl => {
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-zinc-900 text-zinc-200 text-center hover:bg-zinc-900/30";
+                    
+                    const name = bowl.bowlName || 'Bowler';
+                    const overs = bowl.overs !== undefined ? bowl.overs : '0.0';
+                    const maidens = bowl.maidens !== undefined ? bowl.maidens : 0;
+                    const runs = bowl.runs !== undefined ? bowl.runs : 0;
+                    const wickets = bowl.wickets !== undefined ? bowl.wickets : 0;
+                    const econ = bowl.economy || '0.0';
+
+                 tr.innerHTML = `
+                        <td class="p-3 font-medium text-left text-zinc-100">${name}</td>
+                        <td class="p-3 font-mono text-zinc-400">${overs}</td>
+                        <td class="p-3 font-mono text-zinc-500">${maidens}</td>
+                        <td class="p-3 font-mono text-zinc-400">${runs}</td>
+                        <td class="p-3 font-mono font-bold text-rose-400">${wickets}</td>
+                        <td class="p-3 font-mono text-zinc-400">${econ}</td>
+                    `;
+                    if (bowlBody) bowlBody.appendChild(tr);
+                });
+            } else {
+                const noStatsMsg = document.getElementById('detail-no-stats-msg');
+                if (noStatsMsg) noStatsMsg.classList.remove('hidden');
+            }
+        }
+
+        function closeDetailView() {
+            const viewPanel = document.getElementById('detailed-match-view');
+            if (viewPanel) viewPanel.classList.add('hidden');
+            currentlySelectedMatchIndex = null;
+            }
+
+        async function fetchSchedules() {
+            const statusEl = document.getElementById('schedule-status-message');
+            const containerEl = document.getElementById('schedule-container');
+            try {
+                const response = await fetch(UPCOMING_MATCHES_URL, { method: "GET", headers: HEADERS });
+                if (!response.ok) return;
+                const result = await response.json();
+                if (!result || !result.typeMatches) return;
+
+                if (containerEl) containerEl.innerHTML = '';
+                if (statusEl) statusEl.classList.add('hidden');
+                if (containerEl) containerEl.classList.remove('hidden');
+
+                for (let i = 0; i < result.typeMatches.length; i++) {
+                    const matchTypeGroup = result.typeMatches[i];
+                    const matchType = matchTypeGroup.matchType || "Match";
+
+                    if (matchTypeGroup.seriesMatches) {
+                        for (let j = 0; j < matchTypeGroup.seriesMatches.length; j++) {
+                            const series = matchTypeGroup.seriesMatches[j];
+                            
+                            if (series.seriesAdWrapper && series.seriesAdWrapper.matches) {
+                                for (let k = 0; k < series.seriesAdWrapper.matches.length; k++) {
+                                    const matchItem = series.seriesAdWrapper.matches[k];
+                                    const m = matchItem.matchInfo;
+                                    
+                                    if (m) {
+                                        const card = document.createElement('div');
+                                        card.className = "bg-zinc-900 border border-zinc-800 rounded-lg p-5 flex flex-col justify-between shadow-sm";
+                                        
+                                        let dateLabel = "TBD";
+                                        if (m.startDate) {
+                                            dateLabel = new Date(parseInt(m.startDate)).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                                        }
+
+                                        const team1Name = m.team1 && m.team1.teamName ? m.team1.teamName : 'Team A';
+                                        const team2Name = m.team2 && m.team2.teamName ? m.team2.teamName : 'Team B';
+                                        const venueGround = m.venueInfo && m.venueInfo.ground ? m.venueInfo.ground : 'Venue unlisted';
+                                        const seriesName = m.seriesName || 'Tournament';
+                                        const stateLabel = m.state || 'Finished';
+
+                                        card.innerHTML = `
+                                            <div>
+                                                <div class="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-wide border-b border-zinc-800/60 pb-2 mb-3">
+                                                    <span>${matchType}</span>
+                                                    <span class="text-lime-400 font-mono bg-lime-950/20 px-2 py-0.5 rounded">${dateLabel}</span>
+                                                </div>
+                                                <h3 class="text-sm font-bold text-zinc-200 mb-1">${team1Name} vs ${team2Name}</h3>
+                                                <p class="text-xs text-zinc-500 mb-4">${venueGround}</p>
+                                            </div>
+                                            <div class="pt-3 border-t border-zinc-800/50 flex justify-between items-center text-[11px] text-zinc-400 font-medium">
+                                                <span class="truncate max-w-[70%]">${seriesName}</span>
+                                                <span class="text-amber-500 font-semibold bg-amber-950/10 px-1.5 py-0.5 rounded border border-amber-900/20">${stateLabel}</span>
+                                            </div>
+                                        `;
+                                        if (containerEl) containerEl.appendChild(card);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                scheduleFetched = true;
+            } catch (err) { console.error("Schedules error safely logged: ", err); }
+        }
+
+        // Initialize Application Immediately
+        fetchLiveScores();
+        setInterval(fetchLiveScores, 45000);
+    </script>
+</body>
+</html>
+                    
+
+        
