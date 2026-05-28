@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CricLive - Premium Live Scores</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         .cb-nav { background-color: #004f3f; }
         .cb-bg { background-color: #0f1011; }
@@ -13,6 +13,7 @@
 </head>
 <body class="cb-bg min-h-screen text-gray-100 font-sans relative" id="app-body">
 
+    <!-- Top Branding Header -->
     <header class="cb-nav text-white shadow-md">
         <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-3">
@@ -25,6 +26,7 @@
         </div>
     </header>
 
+    <!-- Main Navigation Bar -->
     <nav class="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
         <div class="max-w-5xl mx-auto flex items-center justify-between px-4">
             <div class="flex font-medium text-sm">
@@ -39,14 +41,16 @@
     </nav>
 
     <main class="max-w-5xl mx-auto px-4 py-6">
+        <!-- Live Feed Main Section -->
         <section id="content-live" class="main-tab-content">
             <div id="status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
-                <p id="status-text" class="text-sm text-zinc-400 animate-pulse">Connecting to RapidAPI CricLive stream...</p>
+                <p class="text-sm text-zinc-400 animate-pulse">Connecting to RapidAPI CricLive stream...</p>
             </div>
             <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
             </div>
         </section>
 
+        <!-- Schedule Main Section -->
         <section id="content-schedule" class="main-tab-content hidden">
             <div id="schedule-status-message" class="text-center py-12 max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
                 <p class="text-sm text-zinc-400 animate-pulse">Loading upcoming cricket calendar...</p>
@@ -55,7 +59,9 @@
             </div>
         </section>
 
+        <!-- DYNAMIC DETAILED MATCH VIEW CONTAINER (Appears Below Feeds When Clicked) -->
         <section id="detailed-match-view" class="mt-8 bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl hidden">
+            <!-- Detail Header Controls -->
             <div class="flex justify-between items-start border-b border-zinc-800 pb-4 mb-4 flex-wrap gap-3">
                 <div>
                     <span id="detail-match-type" class="text-[10px] bg-lime-950 text-lime-400 border border-lime-800 px-2 py-0.5 rounded font-bold uppercase tracking-wider"></span>
@@ -66,6 +72,7 @@
                 </button>
             </div>
 
+            <!-- Match Center Interactive Sub-Tabs Navigation Row -->
             <div class="flex border-b border-zinc-800 mb-6 font-semibold text-xs overflow-x-auto">
                 <button onclick="switchSubTab('match-info')" id="subtab-match-info" class="py-2.5 px-4 border-b-2 border-lime-500 text-lime-500 whitespace-nowrap transition-all">
                     📋 Live Info
@@ -78,6 +85,7 @@
                 </button>
             </div>
 
+            <!-- SUB-TAB 1: LIVE INFO -->
             <div id="subcontent-match-info" class="sub-tab-content space-y-4">
                 <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800/60 space-y-3">
                     <div class="flex justify-between items-center">
@@ -92,7 +100,9 @@
                 </div>
             </div>
 
+            <!-- SUB-TAB 2: LIVE SCORECARD (YOUR FEATURE REQUEST) -->
             <div id="subcontent-scorecard" class="sub-tab-content hidden space-y-6">
+                <!-- Batsmen Box -->
                 <div>
                     <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">🏏 Active Batsmen</h4>
                     <div class="table-container bg-zinc-950 border border-zinc-800 rounded-lg">
@@ -112,6 +122,7 @@
                     </div>
                 </div>
 
+                <!-- Bowler Box -->
                 <div>
                     <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">⚾ Active Bowler</h4>
                     <div class="table-container bg-zinc-950 border border-zinc-800 rounded-lg">
@@ -136,6 +147,7 @@
                 </div>
             </div>
 
+            <!-- SUB-TAB 3: VENUE DETAILS -->
             <div id="subcontent-venue" class="sub-tab-content hidden">
                 <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 text-xs space-y-2">
                     <p class="text-zinc-400"><span class="font-bold text-zinc-300">Stadium:</span> <span id="detail-venue-ground"></span></p>
@@ -157,6 +169,7 @@
         let globalLiveMatchesCache = [];
         let currentlySelectedMatchIndex = null;
 
+        // Switches Main App Level View Panels
         function switchMainTab(tabName) {
             document.querySelectorAll('.main-tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('nav > div > button').forEach(btn => {
@@ -164,18 +177,15 @@
                 btn.classList.add('text-gray-400', 'border-transparent');
             });
 
-            const targetContent = document.getElementById('content-' + tabName);
-            if (targetContent) targetContent.classList.remove('hidden');
-            
-            const activeBtn = document.getElementById('tab-' + tabName);
-            if (activeBtn) {
-                activeBtn.classList.remove('text-gray-400', 'border-transparent');
-                activeBtn.classList.add('text-lime-500', 'border-lime-500', 'font-bold');
-            }
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.remove('text-gray-400', 'border-transparent');
+            activeBtn.classList.add('text-lime-500', 'border-lime-500', 'font-bold');
 
             if (tabName === 'schedule' && !scheduleFetched) fetchSchedules();
         }
 
+        // Switches Sub-Tab Panels Inside the Match Center Pane
         function switchSubTab(subTabName) {
             document.querySelectorAll('.sub-tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('#detailed-match-view button[id^="subtab-"]').forEach(btn => {
@@ -183,199 +193,144 @@
                 btn.classList.add('text-gray-400', 'border-transparent');
             });
 
-            const targetSubContent = document.getElementById('subcontent-' + subTabName);
-            if (targetSubContent) targetSubContent.classList.remove('hidden');
-            
-            const activeSubBtn = document.getElementById('subtab-' + subTabName);
-            if (activeSubBtn) {
-                activeSubBtn.classList.remove('text-gray-400', 'border-transparent');
-                activeSubBtn.classList.add('text-lime-500', 'border-lime-500');
-            }
+            document.getElementById(`subcontent-${subTabName}`).classList.remove('hidden');
+            const activeSubBtn = document.getElementById(`subtab-${subTabName}`);
+            activeSubBtn.classList.remove('text-gray-400', 'border-transparent');
+            activeSubBtn.classList.add('text-lime-500', 'border-lime-500');
         }
 
-        function getFormattedScore(teamScoreObj) {
-            if (!teamScoreObj) return '<span class="text-xs text-zinc-600">Yet to bat</span>';
-            
-            let innings = null;
-            if (teamScoreObj.inngs1) {
-                innings = teamScoreObj.inngs1;
-            } else if (teamScoreObj.inngs2) {
-                innings = teamScoreObj.inngs2;
-            }
-
-            if (!innings) return '<span class="text-xs text-zinc-600">Yet to bat</span>';
-            
-            let runs = innings.runs !== undefined ? innings.runs : 0;
-            let wickets = innings.wickets !== undefined ? innings.wickets : 0;
-            let overs = innings.overs !== undefined ? innings.overs : 0;
-            
-            return runs + '/' + wickets + ' <span class="text-xs text-zinc-500">(' + overs + ' ov)</span>';
-        }
-
+        // Render Live Score Updates Dashboard Engine 
         async function fetchLiveScores() {
             const statusEl = document.getElementById('status-message');
             const containerEl = document.getElementById('matches-container');
             const indicatorEl = document.getElementById('refresh-indicator');
 
             try {
-                if (indicatorEl) indicatorEl.innerText = "🔄 Syncing...";
-                
+                indicatorEl.innerText = "🔄 Syncing...";
                 const response = await fetch(LIVE_MATCHES_URL, { method: "GET", headers: HEADERS });
-                
-                if (!response.ok) {
-                    throw new Error("HTTP Network Error Status: " + response.status);
-                }
-                
+                if (!response.ok) throw new Error(`HTTP Error Code ${response.status}`);
                 const result = await response.json();
 
-                if (!result || !result.typeMatches || result.typeMatches.length === 0) {
-                    if (statusEl) statusEl.innerHTML = '<p class="text-sm text-zinc-400">🏏 No matches are running live right now.</p>';
+                if (!result.typeMatches || result.typeMatches.length === 0) {
+                    statusEl.innerHTML = `<p class="text-sm text-zinc-400">🏏 No matches are running live right now.</p>`;
                     return;
                 }
 
-                if (containerEl) containerEl.innerHTML = '';
+                containerEl.innerHTML = '';
+                statusEl.classList.add('hidden');
+                containerEl.classList.remove('hidden');
                 globalLiveMatchesCache = [];
 
-                for (let i = 0; i < result.typeMatches.length; i++) {
-                    const matchTypeGroup = result.typeMatches[i];
-                    const matchType = matchTypeGroup.matchType || "Match";
-                    
+                result.typeMatches.forEach(matchTypeGroup => {
+                    const matchType = matchTypeGroup.matchType || "International";
                     if (matchTypeGroup.seriesMatches) {
-                        for (let j = 0; j < matchTypeGroup.seriesMatches.length; j++) {
-                            const series = matchTypeGroup.seriesMatches[j];
-                            
+                        matchTypeGroup.seriesMatches.forEach(series => {
                             if (series.seriesAdWrapper && series.seriesAdWrapper.matches) {
-                                for (let k = 0; k < series.seriesAdWrapper.matches.length; k++) {
-                                    const matchItem = series.seriesAdWrapper.matches[k];
-                                    const m = matchItem.matchInfo;
-                                    const score = matchItem.matchScore;
-                                    
-                                    if (m) {
-                                        globalLiveMatchesCache.push({ matchType: matchType, ...matchItem });
-                                        const arrayIndexId = globalLiveMatchesCache.length - 1;
+                                series.seriesAdWrapper.matches.forEach(matchInfo => {
+                                    const m = matchInfo.matchInfo;
+                                    const score = matchInfo.matchScore;
+                                    if (!m) return;
 
-                                        let team1Score = "Yet to bat";
-                                        let team2Score = "Yet to bat";
-                                        
-                                        if (score) {
-                                            if (score.team1Score) team1Score = getFormattedScore(score.team1Score);
-                                            if (score.team2Score) team2Score = getFormattedScore(score.team2Score);
-                                        }
+                                    globalLiveMatchesCache.push({ matchType, ...matchInfo });
+                                    const arrayIndexId = globalLiveMatchesCache.length - 1;
 
-                                        const seriesName = m.seriesName || 'Tournament';
-                                        const stateLabel = m.state || 'LIVE';
-                                        const team1Name = m.team1 && m.team1.teamName ? m.team1.teamName : 'Team A';
-                                        const team2Name = m.team2 && m.team2.teamName ? m.team2.teamName : 'Team B';
-                                        const statusLabel = m.status || 'Updating...';
+                                    const card = document.createElement('div');
+                                    card.className = "bg-zinc-900 border border-zinc-800 hover:border-lime-500/40 rounded-lg p-5 shadow-md flex flex-col justify-between cursor-pointer transition-all transform hover:-translate-y-0.5";
+                                    card.setAttribute('onclick', `openMatchDetailsPanel(${arrayIndexId})`);
 
-                                        const card = document.createElement('div');
-                                        card.className = "bg-zinc-900 border border-zinc-800 hover:border-lime-500/40 rounded-lg p-5 shadow-md flex flex-col justify-between cursor-pointer transition-all transform hover:-translate-y-0.5";
-                                        card.setAttribute('onclick', 'openMatchDetailsPanel(' + arrayIndexId + ')');
+                                    const team1Score = score && score.team1Score ? `${score.team1Score.inngs1.runs}/${score.team1Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500">(${score.team1Score.inngs1.overs} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
+                                    const team2Score = score && score.team2Score ? `${score.team2Score.inngs1.runs}/${score.team2Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500">(${score.team2Score.inngs1.overs} ov)</span>` : `<span class="text-xs text-zinc-600">Yet to bat</span>`;
 
-                                        card.innerHTML = `
-                                            <div>
-                                                <div class="flex justify-between items-center text-[11px] font-bold tracking-wider text-zinc-500 uppercase border-b border-zinc-800 pb-2 mb-3">
-                                                    <span>${matchType}</span>
-                                                    <span class="flex items-center gap-1.5 text-rose-500 bg-rose-950/20 px-2 py-0.5 rounded font-mono text-[10px]">
-                                                        <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>${stateLabel}
-                                                    </span>
+                                    card.innerHTML = `
+                                        <div>
+                                            <div class="flex justify-between items-center text-[11px] font-bold tracking-wider text-zinc-500 uppercase border-b border-zinc-800 pb-2 mb-3">
+                                                <span>${matchType}</span>
+                                                <span class="flex items-center gap-1.5 text-rose-500 bg-rose-950/20 px-2 py-0.5 rounded font-mono text-[10px]">
+                                                    <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>${m.state || 'LIVE'}
+                                                </span>
+                                            </div>
+                                            <h2 class="text-xs text-zinc-400 line-clamp-1 mb-4">${m.seriesName}</h2>
+                                            <div class="space-y-3.5 my-2">
+                                                <div class="flex justify-between items-center">
+                                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${m.team1.teamName}</span>
+                                                    <span class="font-mono text-sm font-bold text-zinc-100">${team1Score}</span>
                                                 </div>
-                                                <h2 class="text-xs text-zinc-400 line-clamp-1 mb-4">${seriesName}</h2>
-                                                <div class="space-y-3.5 my-2">
-                                                    <div class="flex justify-between items-center">
-                                                        <span class="font-bold text-zinc-200 text-base tracking-tight">${team1Name}</span>
-                                                        <span class="font-mono text-sm font-bold text-zinc-100">${team1Score}</span>
-                                                    </div>
-                                                    <div class="flex justify-between items-center">
-                                                        <span class="font-bold text-zinc-200 text-base tracking-tight">${team2Name}</span>
-                                                        <span class="font-mono text-sm font-bold text-zinc-100">${team2Score}</span>
-                                                    </div>
+                                                <div class="flex justify-between items-center">
+                                                    <span class="font-bold text-zinc-200 text-base tracking-tight">${m.team2.teamName}</span>
+                                                    <span class="font-mono text-sm font-bold text-zinc-100">${team2Score}</span>
                                                 </div>
                                             </div>
-                                            <div class="mt-5 pt-3 border-t border-zinc-800/80 flex justify-between items-center text-xs font-semibold text-sky-400">
-                                                <span class="truncate max-w-[85%]">👉 ${statusLabel}</span>
-                                                <span class="text-[10px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">View Center ➔</span>
-                                            </div>
-                                        `;
-                                        if (containerEl) containerEl.appendChild(card);
-                                    }
-                                }
+                                        </div>
+                                        <div class="mt-5 pt-3 border-t border-zinc-800/80 flex justify-between items-center text-xs font-semibold text-sky-400">
+                                            <span>👉 ${m.status || 'Updating...'}</span>
+                                            <span class="text-[10px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">View Center ➔</span>
+                                        </div>
+                                    `;
+                                    containerEl.appendChild(card);
+                                });
                             }
-                        }
+                        });
                     }
-                }
+                });
 
-                if (statusEl) statusEl.classList.add('hidden');
-                if (containerEl) containerEl.classList.remove('hidden');
-                if (indicatorEl) indicatorEl.innerText = "✅ Updated";
+                indicatorEl.innerText = "✅ Updated";
 
+                // Live Refresh Mechanism: Keeps score tab updated if user is viewing it live
                 if (currentlySelectedMatchIndex !== null) {
                     updateDetailFields(currentlySelectedMatchIndex);
                 }
             } catch (err) {
-                console.error("Diagnostic engine captured exception: ", err);
-                if (indicatorEl) indicatorEl.innerText = "❌ Connection Error";
-                
-                if (statusEl) {
-                    statusEl.innerHTML = `
-                        <div class="text-left space-y-2">
-                            <p class="text-sm font-bold text-rose-500">🔴 Live Feed Sync Error</p>
-                            <p class="text-xs text-zinc-400 bg-black/40 p-3 rounded font-mono border border-zinc-800">${err.message}</p>
-                            <p class="text-[11px] text-zinc-500 mt-2">💡 Note: Check your RapidAPI Dashboard subscription limits. If it returns status code 403 or 429, you must replace the key string.</p>
-                        </div>
-                    `;
-                }
+                console.error(err);
+                indicatorEl.innerText = "❌ Offline";
             }
         }
 
+        // Activates the Tab Panel Module Section 
         function openMatchDetailsPanel(index) {
             currentlySelectedMatchIndex = index;
             updateDetailFields(index);
+            
             const viewPanel = document.getElementById('detailed-match-view');
-            if (viewPanel) {
-                viewPanel.classList.remove('hidden');
-                viewPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-            switchSubTab('scorecard');
+            viewPanel.classList.remove('hidden');
+            
+            // Focus and scroll directly to match details area smoothly
+            viewPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            switchSubTab('scorecard'); // Default view to the requested scorecard tab upon click
         }
 
+        // Dynamic Field Renderer logic mapping data arrays into the respective tabs
         function updateDetailFields(index) {
             const dataItem = globalLiveMatchesCache[index];
             if (!dataItem) return;
 
-        const m = dataItem.matchInfo;
+            const m = dataItem.matchInfo;
             const score = dataItem.matchScore;
             const mini = dataItem.miniscore;
 
-            const elMap = {
-                'detail-match-type': dataItem.matchType || 'Match',
-                'detail-series-name': m && m.seriesName ? m.seriesName : '',
-                'detail-team1-name': m && m.team1 && m.team1.teamName ? m.team1.teamName : 'Team A',
-                'detail-team2-name': m && m.team2 && m.team2.teamName ? m.team2.teamName : 'Team B',
-                'detail-match-status': m && m.status ? m.status : 'Evaluating fields...',
-                'detail-venue-ground': m && m.venueInfo && m.venueInfo.ground ? m.venueInfo.ground : 'Unavailable',
-                'detail-venue-city': m && m.venueInfo && m.venueInfo.city ? m.venueInfo.city : 'Unavailable'
-            };
+            // Render Tab Info
+            document.getElementById('detail-match-type').innerText = dataItem.matchType;
+            document.getElementById('detail-series-name').innerText = m.seriesName;
+            document.getElementById('detail-team1-name').innerText = m.team1.teamName;
+            document.getElementById('detail-team2-name').innerText = m.team2.teamName;
+            document.getElementById('detail-match-status').innerText = m.status || 'Evaluating fields...';
 
-            for (let id in elMap) {
-                const el = document.getElementById(id);
-                if (el) el.innerText = elMap[id];
-            }
+            document.getElementById('detail-team1-score').innerHTML = score && score.team1Score ? `${score.team1Score.inngs1.runs}/${score.team1Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500">(${score.team1Score.inngs1.overs} ov)</span>` : 'Yet to bat';
+            document.getElementById('detail-team2-score').innerHTML = score && score.team2Score ? `${score.team2Score.inngs1.runs}/${score.team2Score.inngs1.wickets || 0} <span class="text-xs text-zinc-500">(${score.team2Score.inngs1.overs} ov)</span>` : 'Yet to bat';
 
-            const t1ScoreEl = document.getElementById('detail-team1-score');
-            const t2ScoreEl = document.getElementById('detail-team2-score');
-            if (t1ScoreEl) t1ScoreEl.innerHTML = score && score.team1Score ? getFormattedScore(score.team1Score) : 'Yet to bat';
-            if (t2ScoreEl) t2ScoreEl.innerHTML = score && score.team2Score ? getFormattedScore(score.team2Score) : 'Yet to bat';
+            // Render Tab Venue Info
+            document.getElementById('detail-venue-ground').innerText = m.venueInfo?.ground || 'Unavailable';
+            document.getElementById('detail-venue-city').innerText = m.venueInfo?.city || 'Unavailable';
 
-        const batBody = document.getElementById('detail-batsmen-body');
+            // Render Tab Scorecard Table Figures
+            const batBody = document.getElementById('detail-batsmen-body');
             const bowlBody = document.getElementById('detail-bowler-body');
-            if (batBody) batBody.innerHTML = '';
-            if (bowlBody) bowlBody.innerHTML = '';
+            batBody.innerHTML = '';
+            bowlBody.innerHTML = '';
 
             if (mini && (mini.batBatsman || mini.bowlerStriker)) {
-                const noStatsMsg = document.getElementById('detail-no-stats-msg');
-                if (noStatsMsg) noStatsMsg.classList.add('hidden');
+                document.getElementById('detail-no-stats-msg').classList.add('hidden');
                 
+                // Batsmen Data
                 const batsmenArray = [];
                 if (mini.batBatsman) batsmenArray.push({ ...mini.batBatsman, isStriker: true });
                 if (mini.batNonBatsman) batsmenArray.push({ ...mini.batNonBatsman, isStriker: false });
@@ -383,26 +338,18 @@
                 batsmenArray.forEach(b => {
                     const tr = document.createElement('tr');
                     tr.className = "border-b border-zinc-900 text-zinc-200 text-center hover:bg-zinc-900/30";
-                    
-                    const name = b.batName || 'Batsman';
-                    const runs = b.runs !== undefined ? b.runs : 0;
-                    const balls = b.balls !== undefined ? b.balls : 0;
-                    const fours = b.fourX !== undefined ? b.fourX : 0;
-                    const sixes = b.sixX !== undefined ? b.sixX : 0;
-                    const sr = b.strikeRate || '0.0';
-                    const strikerMarker = b.isStriker ? '<span class="text-lime-400 font-bold ml-1">*</span>' : '';
-
-                     tr.innerHTML = `
-                        <td class="p-3 font-medium text-left text-zinc-100">${name} ${strikerMarker}</td>
-                        <td class="p-3 font-mono font-bold text-white">${runs}</td>
-                        <td class="p-3 font-mono text-zinc-400">${balls}</td>
-                        <td class="p-3 font-mono text-zinc-500">${fours}</td>
-                        <td class="p-3 font-mono text-zinc-500">${sixes}</td>
-                        <td class="p-3 font-mono text-zinc-400">${sr}</td>
+                    tr.innerHTML = `
+                    <td class="p-3 font-medium text-left text-zinc-100">${b.batName} ${b.isStriker ? '<span class="text-lime-400 font-bold ml-1">*</span>' : ''}</td>
+                        <td class="p-3 font-mono font-bold text-white">${b.runs || 0}</td>
+                        <td class="p-3 font-mono text-zinc-400">${b.balls || 0}</td>
+                        <td class="p-3 font-mono text-zinc-500">${b.fourX || 0}</td>
+                        <td class="p-3 font-mono text-zinc-500">${b.sixX || 0}</td>
+                        <td class="p-3 font-mono text-zinc-400">${b.strikeRate || '0.0'}</td>
                     `;
-                    if (batBody) batBody.appendChild(tr);
+                    batBody.appendChild(tr);
                 });
 
+                // Bowler Data
                 const bowlerArray = [];
                 if (mini.bowlerStriker) bowlerArray.push(mini.bowlerStriker);
                 if (mini.bowlerNonStriker) bowlerArray.push(mini.bowlerNonStriker);
@@ -410,108 +357,81 @@
                 bowlerArray.forEach(bowl => {
                     const tr = document.createElement('tr');
                     tr.className = "border-b border-zinc-900 text-zinc-200 text-center hover:bg-zinc-900/30";
-                    
-                    const name = bowl.bowlName || 'Bowler';
-                    const overs = bowl.overs !== undefined ? bowl.overs : '0.0';
-                    const maidens = bowl.maidens !== undefined ? bowl.maidens : 0;
-                    const runs = bowl.runs !== undefined ? bowl.runs : 0;
-                    const wickets = bowl.wickets !== undefined ? bowl.wickets : 0;
-                    const econ = bowl.economy || '0.0';
-
-                 tr.innerHTML = `
-                        <td class="p-3 font-medium text-left text-zinc-100">${name}</td>
-                        <td class="p-3 font-mono text-zinc-400">${overs}</td>
-                        <td class="p-3 font-mono text-zinc-500">${maidens}</td>
-                        <td class="p-3 font-mono text-zinc-400">${runs}</td>
-                        <td class="p-3 font-mono font-bold text-rose-400">${wickets}</td>
-                        <td class="p-3 font-mono text-zinc-400">${econ}</td>
+                    tr.innerHTML = `
+                    <td class="p-3 font-medium text-left text-zinc-100">${bowl.bowlName}</td>
+                        <td class="p-3 font-mono text-zinc-400">${bowl.overs || '0.0'}</td>
+                        <td class="p-3 font-mono text-zinc-500">${bowl.maidens || 0}</td>
+                        <td class="p-3 font-mono text-zinc-400">${bowl.runs || 0}</td>
+                        <td class="p-3 font-mono font-bold text-rose-400">${bowl.wickets || 0}</td>
+                        <td class="p-3 font-mono text-zinc-400">${bowl.economy || '0.0'}</td>
                     `;
-                    if (bowlBody) bowlBody.appendChild(tr);
+                    bowlBody.appendChild(tr);
                 });
             } else {
-                const noStatsMsg = document.getElementById('detail-no-stats-msg');
-                if (noStatsMsg) noStatsMsg.classList.remove('hidden');
+                document.getElementById('detail-no-stats-msg').classList.remove('hidden');
             }
         }
 
         function closeDetailView() {
-            const viewPanel = document.getElementById('detailed-match-view');
-            if (viewPanel) viewPanel.classList.add('hidden');
+            document.getElementById('detailed-match-view').classList.add('hidden');
             currentlySelectedMatchIndex = null;
-            }
+        }
 
+        // Fetch Upcoming Matches Schedules Logic
         async function fetchSchedules() {
             const statusEl = document.getElementById('schedule-status-message');
             const containerEl = document.getElementById('schedule-container');
             try {
                 const response = await fetch(UPCOMING_MATCHES_URL, { method: "GET", headers: HEADERS });
-                if (!response.ok) return;
                 const result = await response.json();
-                if (!result || !result.typeMatches) return;
+                if (!result.typeMatches) return;
 
-                if (containerEl) containerEl.innerHTML = '';
-                if (statusEl) statusEl.classList.add('hidden');
-                if (containerEl) containerEl.classList.remove('hidden');
+                containerEl.innerHTML = '';
+                statusEl.classList.add('hidden');
+                containerEl.classList.remove('hidden');
 
-                for (let i = 0; i < result.typeMatches.length; i++) {
-                    const matchTypeGroup = result.typeMatches[i];
+                result.typeMatches.forEach(matchTypeGroup => {
                     const matchType = matchTypeGroup.matchType || "Match";
+                    if(matchTypeGroup.seriesMatches) {
+                        matchTypeGroup.seriesMatches.forEach(series => {
+                            if(series.seriesAdWrapper && series.seriesAdWrapper.matches) {
+                                series.seriesAdWrapper.matches.forEach(matchInfo => {
+                                    const m = matchInfo.matchInfo;
+                                    if(!m) return;
 
-                    if (matchTypeGroup.seriesMatches) {
-                        for (let j = 0; j < matchTypeGroup.seriesMatches.length; j++) {
-                            const series = matchTypeGroup.seriesMatches[j];
-                            
-                            if (series.seriesAdWrapper && series.seriesAdWrapper.matches) {
-                                for (let k = 0; k < series.seriesAdWrapper.matches.length; k++) {
-                                    const matchItem = series.seriesAdWrapper.matches[k];
-                                    const m = matchItem.matchInfo;
-                                    
-                                    if (m) {
-                                        const card = document.createElement('div');
-                                        card.className = "bg-zinc-900 border border-zinc-800 rounded-lg p-5 flex flex-col justify-between shadow-sm";
-                                        
-                                        let dateLabel = "TBD";
-                                        if (m.startDate) {
-                                            dateLabel = new Date(parseInt(m.startDate)).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                                        }
+                                    const card = document.createElement('div');
+                                    card.className = "bg-zinc-900 border border-zinc-800 rounded-lg p-5 flex flex-col justify-between shadow-sm";
+                                    let dateLabel = m.startDate ? new Date(parseInt(m.startDate)).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : "TBD";
 
-                                        const team1Name = m.team1 && m.team1.teamName ? m.team1.teamName : 'Team A';
-                                        const team2Name = m.team2 && m.team2.teamName ? m.team2.teamName : 'Team B';
-                                        const venueGround = m.venueInfo && m.venueInfo.ground ? m.venueInfo.ground : 'Venue unlisted';
-                                        const seriesName = m.seriesName || 'Tournament';
-                                        const stateLabel = m.state || 'Finished';
-
-                                        card.innerHTML = `
-                                            <div>
-                                                <div class="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-wide border-b border-zinc-800/60 pb-2 mb-3">
-                                                    <span>${matchType}</span>
-                                                    <span class="text-lime-400 font-mono bg-lime-950/20 px-2 py-0.5 rounded">${dateLabel}</span>
-                                                </div>
-                                                <h3 class="text-sm font-bold text-zinc-200 mb-1">${team1Name} vs ${team2Name}</h3>
-                                                <p class="text-xs text-zinc-500 mb-4">${venueGround}</p>
+                                    card.innerHTML = `
+                                        <div>
+                                            <div class="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-wide border-b border-zinc-800/60 pb-2 mb-3">
+                                                <span>${matchType}</span>
+                                                <span class="text-lime-400 font-mono bg-lime-950/20 px-2 py-0.5 rounded">${dateLabel}</span>
                                             </div>
-                                            <div class="pt-3 border-t border-zinc-800/50 flex justify-between items-center text-[11px] text-zinc-400 font-medium">
-                                                <span class="truncate max-w-[70%]">${seriesName}</span>
-                                                <span class="text-amber-500 font-semibold bg-amber-950/10 px-1.5 py-0.5 rounded border border-amber-900/20">${stateLabel}</span>
-                                            </div>
-                                        `;
-                                        if (containerEl) containerEl.appendChild(card);
-                                    }
-                                }
+                                            <h3 class="text-sm font-bold text-zinc-200 mb-1">${m.team1.teamName} vs ${m.team2.teamName}</h3>
+                                            <p class="text-xs text-zinc-500 mb-4">${m.venueInfo?.ground || 'Venue unlisted'}</p>
+                                        </div>
+                                        <div class="pt-3 border-t border-zinc-800/50 flex justify-between items-center text-[11px] text-zinc-400 font-medium">
+                                            <span class="truncate max-w-[70%]">${m.seriesName}</span>
+                                            <span class="text-amber-500 font-semibold bg-amber-950/10 px-1.5 py-0.5 rounded border border-amber-900/20">${m.state || 'Finished'}</span>
+                                        </div>
+                                    `;
+                                    containerEl.appendChild(card);
+                                });
                             }
-                        }
+                        });
                     }
-                }
+                });
                 scheduleFetched = true;
-            } catch (err) { console.error("Schedules error safely logged: ", err); }
+            } catch (err) { console.error(err); }
         }
 
-        // Initialize Application Immediately
+        // Initialize Background Refresh Orchestrator
         fetchLiveScores();
-        setInterval(fetchLiveScores, 45000);
+        setInterval(fetchLiveScores, 45000); // Poll feed every 45s to stay updated safely inside quota configurations
     </script>
 </body>
 </html>
-                    
 
-        
+                                                                       
